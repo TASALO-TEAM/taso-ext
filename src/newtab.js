@@ -15,18 +15,34 @@ let settings = {};
 //  Init
 // ═══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[TASALO NewTab] DOMContentLoaded');
+  
   await loadSettings();
+  
+  // Check if new tab is enabled
+  if (settings.newTabEnabled === false) {
+    console.log('[TASALO NewTab] New tab is disabled, redirecting to Google');
+    // Redirect to Google if disabled
+    window.location.href = 'https://www.google.com';
+    return;
+  }
+  
+  console.log('[TASALO NewTab] New tab is enabled, initializing...');
   setupTheme();
   setupClock();
   setupSearch();
   setupYearProgress();
   await loadRates();
   setupRefresh();
-  
+
   // Escuchar cambios en storage
   browser.storage.onChanged.addListener((changes) => {
     if (changes.currentRates || changes.rateChanges) {
       loadRates();
+    }
+    // Check if newTabEnabled changed
+    if (changes.settings && changes.settings.newValue?.newTabEnabled === false) {
+      window.location.href = 'https://www.google.com';
     }
   });
 });
@@ -195,23 +211,34 @@ function setupYearProgress() {
 // ═══════════════════════════════════════════════
 async function loadRates() {
   try {
+    console.log('[TASALO NewTab] loadRates: Loading rates from storage...');
+    
     const data = await browser.storage.local.get([
-      'currentRates', 
-      'rateChanges', 
+      'currentRates',
+      'rateChanges',
       'binanceRates',
       'lastUpdated'
     ]);
-    
+
+    console.log('[TASALO NewTab] loadRates: Storage data:', data);
+
     currentRates = data.currentRates || {};
     rateChanges = data.rateChanges || {};
     binanceRates = data.binanceRates || {};
-    
+
+    console.log('[TASALO NewTab] loadRates: Current rates:', currentRates);
+    console.log('[TASALO NewTab] loadRates: Binance rates:', binanceRates);
+
+    if (Object.keys(currentRates).length === 0) {
+      console.warn('[TASALO NewTab] loadRates: No rates in storage! Background script may not be running.');
+    }
+
     renderElToquePanel();
     renderBccPanel();
     renderBinanceTicker();
-    
+
   } catch (error) {
-    console.error('Error loading rates:', error);
+    console.error('[TASALO NewTab] loadRates: Error:', error);
   }
 }
 

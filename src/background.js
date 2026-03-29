@@ -91,16 +91,20 @@ async function fetchRates() {
     const apiUrl = cachedSettings.apiUrl || DEFAULT_API_URL;
 
     log(`Fetching from ${apiUrl}`, 'FETCH');
+    console.log('[TASALO Background] fetchRates: API URL:', apiUrl);
 
     const response = await fetch(`${apiUrl}/api/v1/tasas/latest`, {
       headers: { 'Accept': 'application/json' }
     });
+
+    console.log('[TASALO Background] fetchRates: Response status:', response.status);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('[TASALO Background] fetchRates: Response data:', data);
 
     if (!data.ok || !data.data) {
       throw new Error('Invalid API response structure');
