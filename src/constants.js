@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════
 //  TASALO — Centralized Constants
-//  Single source of truth for all shared constants
 // ═══════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════
-//  API Configuration
+//  API Configuration - PRODUCTION URL
 // ═══════════════════════════════════════════════
-export const DEFAULT_API_URL = 'http://localhost:8040';
+export const DEFAULT_API_URL = 'https://tasalo.duckdns.org';
 export const PRODUCTION_API_URL = 'https://tasalo.duckdns.org';
 
 export const ALARMS = {
@@ -45,23 +44,23 @@ export const CURRENCY_META = {
 //  Default Settings
 // ═══════════════════════════════════════════════
 export const DEFAULT_SETTINGS = {
-  apiUrl:             DEFAULT_API_URL,
-  updateInterval:     5,              // minutes
-  showChangeType:     'color',        // 'color' | 'amount' | 'percentage'
-  scrollSpeed:        40,             // pixels per second
-  fontSize:           13,             // pixels
+  apiUrl:             DEFAULT_API_URL,  // https://tasalo.duckdns.org
+  updateInterval:     5,                // minutes
+  showChangeType:     'color',
+  scrollSpeed:        40,
+  fontSize:           13,
   showTimestamp:      true,
   showCurrencyFlag:   true,
   compactMode:        false,
   colorUp:            '#ff6b6b',
   colorDown:          '#4ade80',
   colorNeutral:       'auto',
-  colorBg:            'auto',        // 'auto' | 'dark' | 'light'
+  colorBg:            'auto',
   opacity:            1.0,
   selectedCurrencies: [],
   currencyOrder:      [...PREFERRED_ORDER],
   iconRotateEnabled:  true,
-  iconRotateInterval: 2,              // seconds
+  iconRotateInterval: 2,
   omniboxEnabled:     true,
   newTabEnabled:      true,
 };
