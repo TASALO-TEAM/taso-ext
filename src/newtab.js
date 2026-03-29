@@ -1,50 +1,97 @@
 // ═══════════════════════════════════════════════
-//  TASALO — New Tab Page v1
-//  Liquid Glass con dos paneles (ElToque + BCC)
+//  TASALO — New Tab Page
+//  Versión simplificada
 // ═══════════════════════════════════════════════
 
-import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, browser } from './constants.js';
+import { PREFERRED_ORDER, CURRENCY_META, DEFAULT_SETTINGS } from './constants.js';
 
-// Estado global
+const browser = globalThis.browser || chrome;
+
+let settings = { ...DEFAULT_SETTINGS };
 let currentRates = {};
 let rateChanges = {};
 let binanceRates = {};
-let settings = {};
 
-// ═══════════════════════════════════════════════
-//  Init
-// ═══════════════════════════════════════════════
+// ── Init ──────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[TASALO NewTab] DOMContentLoaded');
+  console.log('[NewTab] DOMContentLoaded');
   
-  await loadSettings();
-  
-  // Check if new tab is enabled
-  if (settings.newTabEnabled === false) {
-    console.log('[TASALO NewTab] New tab is disabled, redirecting to Google');
-    // Redirect to Google if disabled
-    window.location.href = 'https://www.google.com';
-    return;
+  try {
+    // Load settings
+    const data = await browser.storage.local.get([
+      'settings', 'currentRates', 'rateChanges', 'binanceRates', 'lastUpdated'
+    ]);
+    
+    console.log('[NewTab] Storage:', data);
+    
+    settings = data.settings || DEFAULT_SETTINGS;
+    currentRates = data.currentRates || {};
+    rateChanges = data.rateChanges || {};
+    binanceRates = data.binanceRates || {};
+    
+    // Check if new tab is disabled - show warning instead of redirect
+    if (settings.newTabEnabled === false) {
+      console.log('[NewTab] New tab is disabled');
+      // Show simple message instead of full dashboard
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);color:var(--text);font-family:sans-serif;text-align:center">
+          <div>
+            <h1>TASALO New Tab deshabilitado</h1>
+            <p>La nueva pestaña está desactivada en las opciones.</p>
+            <p style="margin-top:20px">
+              <a href="https://www.google.com" style="color:var(--accent);text-decoration:none">→ Ir a Google</a>
+            </p>
+            <p style="margin-top:10px;font-size:12px;color:var(--text3)">
+              Para habilitar: Extension Options → Activar Nueva Pestaña
+            </p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+    
+    // Initialize UI
+    setupTheme();
+    setupClock();
+    setupSearch();
+    setupYearProgress();
+    renderElToquePanel();
+    renderBccPanel();
+    renderBinanceTicker();
+    setupRefresh();
+    
+    // Listen for changes
+    browser.storage.onChanged.addListener((changes) => {
+      if (changes.currentRates) {
+        currentRates = changes.currentRates.newValue || {};
+        renderElToquePanel();
+        renderBccPanel();
+      }
+      if (changes.rateChanges) {
+        rateChanges = changes.rateChanges.newValue || {};
+        renderElToquePanel();
+        renderBccPanel();
+      }
+      if (changes.binanceRates) {
+        binanceRates = changes.binanceRates.newValue || {};
+        renderBinanceTicker();
+      }
+    });
+    
+  } catch (error) {
+    console.error('[NewTab] Error:', error);
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#09091e;color:#eeeef8;font-family:sans-serif;text-align:center;padding:40px">
+        <div>
+          <h1 style="color:#ff6b6b">❌ Error cargando TASALO</h1>
+          <p>${error.message}</p>
+          <p style="margin-top:20px;font-size:12px;color:#585878">
+            Ver consola para más detalles (F12)
+          </p>
+        </div>
+      </div>
+    `;
   }
-  
-  console.log('[TASALO NewTab] New tab is enabled, initializing...');
-  setupTheme();
-  setupClock();
-  setupSearch();
-  setupYearProgress();
-  await loadRates();
-  setupRefresh();
-
-  // Escuchar cambios en storage
-  browser.storage.onChanged.addListener((changes) => {
-    if (changes.currentRates || changes.rateChanges) {
-      loadRates();
-    }
-    // Check if newTabEnabled changed
-    if (changes.settings && changes.settings.newValue?.newTabEnabled === false) {
-      window.location.href = 'https://www.google.com';
-    }
-  });
 });
 
 async function loadSettings() {
