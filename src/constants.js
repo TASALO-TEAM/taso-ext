@@ -44,8 +44,9 @@ export const CURRENCY_META = {
 //  Default Settings
 // ═══════════════════════════════════════════════
 export const DEFAULT_SETTINGS = {
-  apiUrl:             DEFAULT_API_URL,  // https://tasalo.duckdns.org
+  apiUrl:             DEFAULT_API_URL,
   updateInterval:     5,                // minutes
+  sourcePreference:   'eltoque',        // 'eltoque' | 'bcc'
   showChangeType:     'color',
   scrollSpeed:        40,
   fontSize:           13,

@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════
 //  TASALO — Popup v1
-//  Liquid Glass Style with taso-api integration
+//  Muestra SOLO ElToque O BCC según configuración
 // ═══════════════════════════════════════════════
 
 import { PREFERRED_ORDER, CURRENCY_META, browser } from './constants.js';
@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (listenersAttached) return;
   listenersAttached = true;
 
-  // Leer preferencia de ticker abierto/cerrado
   const uiState = await browser.storage.local.get('popupUiState');
   tickerOpen = (uiState.popupUiState && uiState.popupUiState.tickerOpen) ?? false;
 
@@ -93,24 +92,52 @@ function renderAll() {
     renderTicker();
   }
 
-  // Aplicar estado ticker
   applyTickerState();
+}
+
+// ── Obtener fuente seleccionada (ElToque O BCC) ───────────────────────────
+function getSourcePreference() {
+  // Por defecto: ElToque
+  return settings.sourcePreference || 'eltoque';
+}
+
+// ── Obtener monedas de la fuente seleccionada ───────────────────────────
+function getSourceCurrencies() {
+  const source = getSourcePreference();
+  
+  // ElToque: mercado informal
+  if (source === 'eltoque') {
+    return ['EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT'];
+  }
+  
+  // BCC: mercado oficial
+  if (source === 'bcc') {
+    return ['EUR', 'USD', 'CAD', 'GBP', 'CHF', 'MXN'];
+  }
+  
+  // Default: ElToque
+  return ['EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT'];
 }
 
 // ── Ordenar monedas ───────────────────────────
 function getSortedCurrencies() {
+  const sourceCurrencies = getSourceCurrencies();
   const order = settings.currencyOrder?.length ? settings.currencyOrder : PREFERRED_ORDER;
   const selected = settings.selectedCurrencies ?? [];
-  const all = Object.keys(currentRates);
-
-  const sorted = [...all].sort((a, b) => {
+  
+  // Filtrar solo las monedas de la fuente seleccionada
+  const filtered = sourceCurrencies.filter(cur => 
+    Object.keys(currentRates).includes(cur)
+  );
+  
+  const sorted = [...filtered].sort((a, b) => {
     const ia = order.indexOf(a), ib = order.indexOf(b);
     if (ia === -1 && ib === -1) return a.localeCompare(b);
     if (ia === -1) return 1;
     if (ib === -1) return -1;
     return ia - ib;
   });
-
+  
   return selected.length > 0 ? sorted.filter(c => selected.includes(c)) : sorted;
 }
 
@@ -123,10 +150,8 @@ function renderGrid() {
   const showFlags = settings.showCurrencyFlag !== false;
   const fontSize = settings.fontSize ?? 13;
 
-  // Ajustar columnas
   const cols = currencies.length <= 2 ? 'cols-2' : '';
   grid.className = 'rates-grid ' + cols;
-
   grid.innerHTML = '';
 
   for (const cur of currencies) {
@@ -227,7 +252,6 @@ function attachListeners() {
   const btnSettings = document.getElementById('btnSettings');
   const tickerToggle = document.getElementById('tickerToggle');
 
-  // Refresh
   if (btnRefresh) {
     btnRefresh.addEventListener('click', async () => {
       btnRefresh.classList.add('spinning');
@@ -241,14 +265,12 @@ function attachListeners() {
     });
   }
 
-  // Settings
   if (btnSettings) {
     btnSettings.addEventListener('click', () => {
       browser.runtime.openOptionsPage();
     });
   }
 
-  // Toggle ticker
   if (tickerToggle) {
     tickerToggle.addEventListener('click', () => {
       tickerOpen = !tickerOpen;
@@ -258,7 +280,6 @@ function attachListeners() {
   }
 }
 
-// Actualizaciones en tiempo real (debounced)
 const debouncedStorageUpdate = debounce(async (changes) => {
   if (changes.currentRates || changes.rateChanges || changes.lastUpdated || changes.fetchError) {
     await loadData();
