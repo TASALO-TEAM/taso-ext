@@ -420,6 +420,18 @@ browser.omnibox.onInputChanged.addListener((text, suggest) => {
 });
 
 browser.omnibox.onInputEntered.addListener((text, disposition) => {
+  // Check if new tab is enabled
+  if (!cachedSettings.newTabEnabled) {
+    log('New tab disabled, opening Google instead', 'INFO');
+    const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(text ? `tasalo ${text}` : 'tasalo')}`;
+    if (disposition === 'currentTab') {
+      browser.tabs.update({ url: googleUrl });
+    } else {
+      browser.tabs.create({ url: googleUrl });
+    }
+    return;
+  }
+
   const url = browser.runtime.getURL('src/newtab.html') +
               (text ? `#${text.toUpperCase()}` : '');
 

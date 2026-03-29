@@ -63,7 +63,8 @@ export const DEFAULT_SETTINGS = {
   iconRotateEnabled:  true,
   iconRotateInterval: 2,
   omniboxEnabled:     true,
-  newTabEnabled:      true,
+  newTabEnabled:      true,              // Activar/desactivar new tab
+  tickerCurrencies:   ['BTC', 'ETH', 'BNB', 'XRP', 'ADA', 'DOGE', 'SOL', 'TRX', 'DOT', 'MATIC'],
 };
 
 // ═══════════════════════════════════════════════

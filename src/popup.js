@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════
 //  TASALO — Popup v1
-//  Muestra SOLO ElToque O BCC según configuración
+//  Con ticker de Binance
 // ═══════════════════════════════════════════════
 
 import { PREFERRED_ORDER, CURRENCY_META, browser } from './constants.js';
@@ -9,8 +9,15 @@ let settings = {};
 let currentRates = {};
 let rateChanges = {};
 let previousRates = {};
+let binanceRates = {};
 let tickerOpen = false;
 let listenersAttached = false;
+
+// Binance currencies for ticker
+const DEFAULT_BINANCE_CURRENCIES = [
+  'BTC', 'ETH', 'BNB', 'XRP', 'ADA',
+  'DOGE', 'SOL', 'TRX', 'DOT', 'MATIC'
+];
 
 // ── Debounce utility ───────────────────────────
 function debounce(fn, delay) {
@@ -39,12 +46,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadData() {
   const data = await browser.storage.local.get([
     'settings', 'currentRates', 'previousRates',
-    'rateChanges', 'lastUpdated', 'fetchError'
+    'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError'
   ]);
   settings = data.settings ?? {};
   currentRates = data.currentRates ?? {};
   previousRates = data.previousRates ?? {};
   rateChanges = data.rateChanges ?? {};
+  binanceRates = data.binanceRates ?? {};
 
   const errorBanner = document.getElementById('errorBanner');
   const errorMsg = document.getElementById('errorMsg');
@@ -89,15 +97,14 @@ function renderAll() {
 
   if (hasRates) {
     renderGrid();
-    renderTicker();
+    renderBinanceTicker();
   }
 
   applyTickerState();
 }
 
-// ── Obtener fuente seleccionada (ElToque O BCC) ───────────────────────────
+// ── Obtener fuente seleccionada ───────────────────────────
 function getSourcePreference() {
-  // Por defecto: ElToque
   return settings.sourcePreference || 'eltoque';
 }
 
@@ -105,17 +112,14 @@ function getSourcePreference() {
 function getSourceCurrencies() {
   const source = getSourcePreference();
   
-  // ElToque: mercado informal
   if (source === 'eltoque') {
     return ['EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT'];
   }
   
-  // BCC: mercado oficial
   if (source === 'bcc') {
     return ['EUR', 'USD', 'CAD', 'GBP', 'CHF', 'MXN'];
   }
   
-  // Default: ElToque
   return ['EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT'];
 }
 
@@ -125,7 +129,6 @@ function getSortedCurrencies() {
   const order = settings.currencyOrder?.length ? settings.currencyOrder : PREFERRED_ORDER;
   const selected = settings.selectedCurrencies ?? [];
   
-  // Filtrar solo las monedas de la fuente seleccionada
   const filtered = sourceCurrencies.filter(cur => 
     Object.keys(currentRates).includes(cur)
   );
@@ -182,33 +185,43 @@ function renderGrid() {
   }
 }
 
-// ── Ticker ────────────────────────────────────
-function renderTicker() {
-  const currencies = getSortedCurrencies();
-  const speed = settings.scrollSpeed ?? 40;
+// ── Ticker de Binance ────────────────────────────────────
+function renderBinanceTicker() {
   const strip = document.getElementById('tickerStrip');
   if (!strip) return;
 
-  const itemsHtml = currencies.map(cur => {
-    const val = currentRates[cur];
-    if (val === undefined) return '';
-    const change = rateChanges[cur] ?? 'neutral';
-    const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
-    const fmted = fmtRate(val);
-    return '<span class="t-item ' + change + '">'
-      + '<span class="t-cur">' + cur + '</span>'
-      + '<span class="t-val">' + fmted + '</span>'
-      + '<span class="t-arr">' + arrow + '</span>'
-      + '</span><span class="t-sep">·</span>';
-  }).join('');
+  // Usar monedas configuradas o default
+  const currencies = settings.tickerCurrencies || DEFAULT_BINANCE_CURRENCIES;
+  
+  if (Object.keys(binanceRates).length === 0) {
+    strip.innerHTML = '<span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">Sin datos de Binance</span>';
+    return;
+  }
 
-  if (!itemsHtml.trim()) return;
+  const itemsHtml = currencies.map(cur => {
+    const rate = binanceRates[cur];
+    if (!rate) return '';
+    
+    return `<span class="t-item bnc">` +
+      `<span class="t-cur">${cur}</span>` +
+      `<span class="t-val">${rate.toFixed(2)}</span>` +
+      `<span class="t-unit">USDT</span>` +
+      `</span><span class="tsep">·</span>`;
+  }).filter(item => item).join('');
+
+  if (!itemsHtml.trim()) {
+    strip.innerHTML = '<span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">Sin datos</span>';
+    return;
+  }
+
+  // Duplicate for seamless loop
   strip.innerHTML = itemsHtml + itemsHtml;
 
-  const totalChars = currencies.reduce((acc, c) => acc + c.length + fmtRate(currentRates[c] ?? 0).length + 4, 0);
-  const dur = Math.max(6, (totalChars * 9) / (speed / 20));
-  strip.style.animationDuration = dur + 's';
-  document.documentElement.style.setProperty('--ticker-dur', dur + 's');
+  // Calculate animation duration
+  const totalChars = currencies.length * 20;
+  const duration = Math.max(15, totalChars * 0.4);
+  strip.style.animationDuration = `${duration}s`;
+  document.documentElement.style.setProperty('--ticker-dur', `${duration}s`);
 }
 
 // ── Toggle ticker ─────────────────────────────
@@ -281,7 +294,7 @@ function attachListeners() {
 }
 
 const debouncedStorageUpdate = debounce(async (changes) => {
-  if (changes.currentRates || changes.rateChanges || changes.lastUpdated || changes.fetchError) {
+  if (changes.currentRates || changes.rateChanges || changes.binanceRates || changes.lastUpdated || changes.fetchError) {
     await loadData();
     renderAll();
   }

@@ -30,6 +30,7 @@ async function loadSettings() {
 function loadFormValues() {
   // General
   document.getElementById('updateInterval').value = settings.updateInterval || 5;
+  document.getElementById('newTabEnabled').checked = settings.newTabEnabled !== false;
   document.getElementById('iconRotateEnabled').checked = settings.iconRotateEnabled !== false;
   document.getElementById('iconRotateInterval').value = settings.iconRotateInterval || 2;
   
@@ -188,6 +189,7 @@ async function saveSettings() {
   const newSettings = {
     ...settings,
     updateInterval: parseInt(document.getElementById('updateInterval').value),
+    newTabEnabled: document.getElementById('newTabEnabled').checked,
     iconRotateEnabled: document.getElementById('iconRotateEnabled').checked,
     iconRotateInterval: parseInt(document.getElementById('iconRotateInterval').value),
     colorBg: theme,
