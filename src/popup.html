@@ -3,93 +3,231 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TASALO — Tasas de Cambio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="popup.css">
+  <title>TASALO Popup</title>
+  <style>
+    :root {
+      --bg: #09091e;
+      --bg-glass: rgba(16, 16, 42, 0.92);
+      --text: #eeeef8;
+      --text2: #9090c0;
+      --text3: #585878;
+      --accent: #5b8aff;
+      --up: #ff6b6b;
+      --down: #4ade80;
+      --r: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 340px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, sans-serif;
+      font-size: 13px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--bg-glass);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .brand { font-weight: 700; font-size: 14px; }
+    .brand-sub { font-size: 10px; color: var(--text3); }
+    .header-right { display: flex; gap: 6px; align-items: center; }
+    .update-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text3);
+    }
+    .update-dot.ok { background: var(--down); box-shadow: 0 0 8px var(--down); }
+    .update-dot.error { background: var(--up); box-shadow: 0 0 8px var(--up); }
+    .update-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: 0.5; } }
+    .update-info { font-size: 9px; color: var(--text3); min-width: 40px; }
+    .icon-btn {
+      width: 24px; height: 24px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-btn:hover { background: var(--accent-dim); color: var(--text); }
+    .error-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      font-size: 10px;
+    }
+    .rates-section { padding: 12px; min-height: 80px; }
+    .rates-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px;
+      color: var(--text3);
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid var(--text3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .rates-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .rate-card {
+      background: var(--bg-glass);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--r);
+      padding: 10px;
+      position: relative;
+      overflow: hidden;
+      border-left: 3px solid transparent;
+    }
+    .rate-card.up { border-left-color: var(--up); }
+    .rate-card.down { border-left-color: var(--down); }
+    .rate-card.neutral { border-left-color: var(--text3); }
+    .rate-cur { font-size: 9px; color: var(--text2); font-weight: 700; }
+    .rate-val { font-size: 18px; font-weight: 700; margin: 4px 0; }
+    .rate-card.up .rate-val { color: var(--up); }
+    .rate-card.down .rate-val { color: var(--down); }
+    .rate-name { font-size: 9px; color: var(--text3); }
+    .ticker-section {
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 8px 0;
+    }
+    .ticker-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 9px;
+      color: var(--text2);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .ticker-header:hover { background: rgba(91, 138, 255, 0.1); }
+    .ticker-body { overflow: hidden; }
+    .ticker-body.open { max-height: 40px; }
+    .ticker-body:not(.open) { max-height: 0; }
+    .ticker-wrapper {
+      height: 36px;
+      overflow: hidden;
+      position: relative;
+    }
+    .ticker-strip {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      white-space: nowrap;
+      animation: ticker-move linear infinite;
+    }
+    @keyframes ticker-move { 100% { transform: translateX(-50%); } }
+    .t-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 14px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .t-cur { color: var(--text2); font-size: 9px; }
+    .t-val { font-weight: 700; }
+    .t-unit { font-size: 8px; color: var(--text3); }
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 9px;
+      color: var(--text3);
+    }
+    .footer-dot {
+      width: 4px; height: 4px;
+      background: var(--down);
+      border-radius: 50%;
+      margin: 0 4px;
+    }
+  </style>
 </head>
 <body>
-  <div class="popup-wrap">
-
-    <!-- Header -->
-    <header class="header">
-      <div class="header-left">
-        <span class="logo-mark">💱</span>
-        <div class="brand-block">
-          <span class="brand">TASALO</span>
-          <span class="brand-sep">/</span>
-          <span class="brand-sub">Tasas de cambio</span>
-        </div>
-      </div>
-      <div class="header-right">
-        <span class="update-dot" id="updateDot" title="Estado API"></span>
-        <span class="update-info" id="updateInfo" title="Última actualización">—</span>
-        <button class="icon-btn" id="btnRefresh" title="Actualizar ahora">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-          </svg>
-        </button>
-        <button class="icon-btn" id="btnSettings" title="Configuración">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-          </svg>
-        </button>
-      </div>
-    </header>
-
-    <!-- Error Banner -->
-    <div class="error-banner" id="errorBanner" style="display:none">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span id="errorMsg">Error al conectar</span>
-    </div>
-
-    <!-- Rates Grid -->
-    <div class="rates-section" id="ratesSection">
-      <div class="rates-loading" id="ratesLoading">
-        <div class="spinner"></div>
-        <span>Obteniendo tasas...</span>
-      </div>
-      <div class="rates-grid" id="ratesGrid" style="display:none"></div>
-    </div>
-
-    <!-- Ticker -->
-    <div class="ticker-section" id="tickerSection">
-      <div class="ticker-header" id="tickerToggle" title="Mostrar/ocultar ticker">
-        <span class="ticker-label">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-            <polyline points="17 6 23 6 23 12"/>
-          </svg>
-          ticker
-        </span>
-        <span class="ticker-chevron" id="tickerChevron">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-        </span>
-      </div>
-      <div class="ticker-body" id="tickerBody">
-        <div class="ticker-wrapper" id="tickerWrapper">
-          <div class="ticker-strip" id="tickerStrip">
-            <span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">cargando...</span>
-          </div>
-        </div>
+  <header class="header">
+    <div class="header-left">
+      <div>
+        <div class="brand">TASALO</div>
+        <div class="brand-sub">Tasas de cambio</div>
       </div>
     </div>
+    <div class="header-right">
+      <div class="update-dot" id="updateDot"></div>
+      <div class="update-info" id="updateInfo">—</div>
+      <button class="icon-btn" id="btnRefresh" title="Actualizar">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btnSettings" title="Opciones">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <span class="footer-source">
-        <span class="footer-dot"></span>
-        TASALO — Tasas del mercado informal (No Oficial)
-      </span>
-      <span class="footer-interval" id="footerInterval">—</span>
-    </footer>
-
+  <div class="error-banner" id="errorBanner">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span id="errorMsg">Error</span>
   </div>
 
-  <script src="popup.js" type="module"></script>
+  <div class="rates-section">
+    <div class="rates-loading" id="ratesLoading">
+      <div class="spinner"></div>
+      <span>Cargando tasas...</span>
+    </div>
+    <div class="rates-grid" id="ratesGrid" style="display:none"></div>
+  </div>
+
+  <div class="ticker-section">
+    <div class="ticker-header" id="tickerToggle">
+      <span>🪙 Binance Ticker</span>
+      <span id="tickerChevron">▼</span>
+    </div>
+    <div class="ticker-body" id="tickerBody">
+      <div class="ticker-wrapper">
+        <div class="ticker-strip" id="tickerStrip">
+          <span style="padding:0 16px;font-size:9px;color:var(--text3)">Cargando...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <span>
+      <span class="footer-dot"></span>
+      TASALO — Tasas Cuba
+    </span>
+    <span id="footerInterval">—</span>
+  </footer>
+
+  <script type="module" src="popup.js"></script>
 </body>
 </html>
