@@ -9,8 +9,15 @@ let settings = {};
 let currentRates = {};
 let rateChanges = {};
 let previousRates = {};
+let binanceRates = {};
 let tickerOpen = false;
 let listenersAttached = false;
+
+// Binance currencies for ticker (top 10 most popular)
+const DEFAULT_BINANCE_CURRENCIES = [
+  'BTC', 'ETH', 'BNB', 'XRP', 'ADA',
+  'DOGE', 'SOL', 'TRX', 'DOT', 'MATIC'
+];
 
 // ── Debounce utility ───────────────────────────
 function debounce(fn, delay) {
@@ -39,12 +46,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadData() {
   const data = await browser.storage.local.get([
     'settings', 'currentRates', 'previousRates',
-    'rateChanges', 'lastUpdated', 'fetchError'
+    'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError'
   ]);
   settings = data.settings ?? {};
   currentRates = data.currentRates ?? {};
   previousRates = data.previousRates ?? {};
   rateChanges = data.rateChanges ?? {};
+  binanceRates = data.binanceRates ?? {};
 
   const errorBanner = document.getElementById('errorBanner');
   const errorMsg = document.getElementById('errorMsg');
@@ -182,33 +190,43 @@ function renderGrid() {
   }
 }
 
-// ── Ticker ────────────────────────────────────
+// ── Ticker de Binance ────────────────────────────────────
 function renderTicker() {
-  const currencies = getSortedCurrencies();
-  const speed = settings.scrollSpeed ?? 40;
   const strip = document.getElementById('tickerStrip');
   if (!strip) return;
 
-  const itemsHtml = currencies.map(cur => {
-    const val = currentRates[cur];
-    if (val === undefined) return '';
-    const change = rateChanges[cur] ?? 'neutral';
-    const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
-    const fmted = fmtRate(val);
-    return '<span class="t-item ' + change + '">'
-      + '<span class="t-cur">' + cur + '</span>'
-      + '<span class="t-val">' + fmted + '</span>'
-      + '<span class="t-arr">' + arrow + '</span>'
-      + '</span><span class="t-sep">·</span>';
-  }).join('');
+  // Usar monedas configuradas o default
+  const currencies = settings.tickerCurrencies || DEFAULT_BINANCE_CURRENCIES;
 
-  if (!itemsHtml.trim()) return;
+  if (Object.keys(binanceRates).length === 0) {
+    strip.innerHTML = '<span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">Sin datos de Binance</span>';
+    return;
+  }
+
+  const itemsHtml = currencies
+    .filter(cur => binanceRates[cur] !== undefined)
+    .map(cur => {
+      const rate = binanceRates[cur];
+      return `<span class="t-item bnc">` +
+        `<span class="t-cur">${cur}</span>` +
+        `<span class="t-val">${rate.toFixed(2)}</span>` +
+        `<span class="t-unit">USDT</span>` +
+        `</span><span class="tsep">·</span>`;
+    })
+    .join('');
+
+  if (!itemsHtml) {
+    strip.innerHTML = '<span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">Sin datos</span>';
+    return;
+  }
+
+  // Duplicate for seamless loop
   strip.innerHTML = itemsHtml + itemsHtml;
 
-  const totalChars = currencies.reduce((acc, c) => acc + c.length + fmtRate(currentRates[c] ?? 0).length + 4, 0);
-  const dur = Math.max(6, (totalChars * 9) / (speed / 20));
-  strip.style.animationDuration = dur + 's';
-  document.documentElement.style.setProperty('--ticker-dur', dur + 's');
+  // Calculate animation duration
+  const duration = Math.max(15, currencies.length * 0.4);
+  strip.style.animationDuration = `${duration}s`;
+  document.documentElement.style.setProperty('--ticker-dur', `${duration}s`);
 }
 
 // ── Toggle ticker ─────────────────────────────
@@ -257,11 +275,26 @@ function attachListeners() {
       btnRefresh.classList.add('spinning');
       btnRefresh.disabled = true;
       setDot('loading');
-      await browser.runtime.sendMessage({ type: 'FETCH_NOW' });
-      await loadData();
-      renderAll();
-      btnRefresh.classList.remove('spinning');
-      btnRefresh.disabled = false;
+      
+      try {
+        await browser.runtime.sendMessage({ type: 'FETCH_NOW' });
+        
+        // Recargar datos incluyendo binanceRates
+        const data = await browser.storage.local.get([
+          'currentRates', 'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError'
+        ]);
+        
+        currentRates = data.currentRates || {};
+        rateChanges = data.rateChanges || {};
+        binanceRates = data.binanceRates || {};
+        
+        renderAll();
+      } catch (error) {
+        console.error('Refresh error:', error);
+      } finally {
+        btnRefresh.classList.remove('spinning');
+        btnRefresh.disabled = false;
+      }
     });
   }
 
@@ -281,7 +314,11 @@ function attachListeners() {
 }
 
 const debouncedStorageUpdate = debounce(async (changes) => {
-  if (changes.currentRates || changes.rateChanges || changes.lastUpdated || changes.fetchError) {
+  if (changes.currentRates || changes.rateChanges || changes.binanceRates || changes.lastUpdated || changes.fetchError) {
+    if (changes.currentRates) currentRates = changes.currentRates.newValue || {};
+    if (changes.rateChanges) rateChanges = changes.rateChanges.newValue || {};
+    if (changes.binanceRates) binanceRates = changes.binanceRates.newValue || {};
+    
     await loadData();
     renderAll();
   }
