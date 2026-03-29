@@ -10,6 +10,106 @@
 </head>
 <body>
 
+<!-- Pantalla de carga mientras verificamos si está activado -->
+<div id="loadingScreen" style="display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg);color:var(--text);font-family:sans-serif">
+  <div style="text-align:center">
+    <div class="spinner" style="width:40px;height:40px;border:3px solid var(--text3);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 20px"></div>
+    <p>Cargando TASALO...</p>
+  </div>
+</div>
+
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<script type="module">
+const browser = globalThis.browser || chrome;
+
+console.log('[NewTab] Script loaded');
+
+async function init() {
+  try {
+    // Load settings first
+    const data = await browser.storage.local.get('settings');
+    const settings = data.settings || {};
+    
+    console.log('[NewTab] Settings:', settings);
+    console.log('[NewTab] newTabEnabled:', settings.newTabEnabled);
+    
+    // Check if new tab is DISABLED
+    if (settings.newTabEnabled === false) {
+      console.log('[NewTab] New tab is DISABLED - redirecting to browser default');
+      
+      // Redirect to browser's default new tab
+      // Chrome: chrome://newtab | Firefox: about:home
+      const defaultNewTab = browser.runtime.getURL('src/default-newtab.html');
+      
+      // Create simple redirect page
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#09091e;color:#eeeef8;font-family:sans-serif;text-align:center">
+          <div>
+            <h2 style="margin-bottom:10px">🚀 TASALO New Tab deshabilitado</h2>
+            <p style="color:#9090c0;margin-bottom:20px">Redirigiendo a la nueva pestaña del navegador...</p>
+            <p style="font-size:12px;color:#585878">
+              Para habilitar: Extension Options → Activar Nueva Pestaña
+            </p>
+          </div>
+        </div>
+      `;
+      
+      // Redirect after 2 seconds
+      setTimeout(() => {
+        // Try to open browser's default new tab
+        browser.tabs.create({url: 'https://www.google.com'});
+        // Close current tab
+        browser.tabs.getCurrent((tab) => {
+          if (tab) browser.tabs.remove(tab.id);
+        });
+      }, 2000);
+      
+      return;
+    }
+    
+    console.log('[NewTab] New tab is ENABLED - loading dashboard');
+    
+    // New tab is ENABLED - load the actual dashboard
+    // Remove loading screen
+    document.getElementById('loadingScreen').style.display = 'none';
+    
+    // Load the actual content
+    await loadDashboard(settings);
+    
+  } catch (error) {
+    console.error('[NewTab] Error:', error);
+    document.body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#09091e;color:#eeeef8;font-family:sans-serif;text-align:center;padding:40px">
+        <div>
+          <h1 style="color:#ff6b6b">❌ Error</h1>
+          <p>${error.message}</p>
+          <p style="margin-top:20px;font-size:12px;color:#585878">Ver consola (F12)</p>
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function loadDashboard(settings) {
+  // The actual dashboard HTML is in the body below
+  // Just need to initialize it
+  
+  // Load rates
+  const ratesData = await browser.storage.local.get([
+    'currentRates', 'rateChanges', 'binanceRates', 'lastUpdated'
+  ]);
+  
+  console.log('[NewTab] Rates:', ratesData);
+  
+  // Initialize dashboard (existing code will run)
+  // The rest of the HTML/CSS/JS will handle rendering
+}
+
+// Start
+init();
+</script>
+
 <!-- Ticker Binance -->
 <div id="tickerZone">
   <div id="tickerStrip">
