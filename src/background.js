@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════
 //  TASALO — Background Service Worker v1
-//  Fetch rates from taso-api (single source)
+//  Compatible con Chrome y Firefox
 // ═══════════════════════════════════════════════
 
 import {
@@ -11,8 +11,10 @@ import {
   DEFAULT_SETTINGS,
   deepClone,
   log,
-  browser,
 } from './constants.js';
+
+// Cross-browser API wrapper
+const browser = globalThis.browser || chrome;
 
 // ═══════════════════════════════════════════════
 //  State
@@ -123,7 +125,7 @@ async function fetchRates() {
     await browser.storage.local.set({
       currentRates: rates,
       rateChanges: changes,
-      binanceRates: binanceRates,  // Separate for ticker
+      binanceRates: binanceRates,
       lastUpdated: now,
       fetchError: null,
     });
