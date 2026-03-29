@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TASALO - Tasas de Cambio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="newtab.css">
+</head>
+<body>
+
+<!-- Ticker Binance -->
+<div id="tickerZone">
+  <div id="tickerStrip">
+    <span style="padding:0 16px;font-size:11px;color:var(--text3);font-family:var(--mono)">cargando criptomonedas...</span>
+  </div>
+</div>
+
+<!-- Contenido principal -->
+<div id="page">
+
+  <!-- Header con reloj -->
+  <div id="hdr">
+    <div>
+      <div id="clock">--:--:--</div>
+      <div id="dateStr">Cargando fecha...</div>
+    </div>
+    <div id="hdrRight">
+      <div class="theme-toggle">
+        <button class="theme-btn active" data-theme="auto">Auto</button>
+        <button class="theme-btn" data-theme="dark">Dark</button>
+        <button class="theme-btn" data-theme="light">Light</button>
+      </div>
+      <button class="hbtn" id="btnSettings">⚙️ Opciones</button>
+    </div>
+  </div>
+
+  <!-- Paneles de tasas -->
+  <div id="panels">
+    
+    <!-- Panel ElToque (Izquierda) -->
+    <div class="panel" id="panelEltoque">
+      <div class="pnl-hdr">
+        <div class="pnl-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M2 12h20"/>
+          </svg>
+          El Toque
+        </div>
+        <div class="pnl-right">
+          <span class="pnl-upd" id="eltoqueUpd">--:--</span>
+          <span class="badge badge-et">Informal</span>
+        </div>
+      </div>
+      <div class="rgrid" id="eltoqueGrid">
+        <div class="skel" style="height:80px"></div>
+        <div class="skel" style="height:80px"></div>
+        <div class="skel" style="height:80px"></div>
+      </div>
+    </div>
+
+    <!-- Panel BCC (Derecha) -->
+    <div class="panel" id="panelBcc">
+      <div class="pnl-hdr">
+        <div class="pnl-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          BCC
+        </div>
+        <div class="pnl-right">
+          <span class="pnl-upd" id="bccUpd">--:--</span>
+          <span class="badge badge-bn">Oficial</span>
+        </div>
+      </div>
+      <div class="rgrid" id="bccGrid">
+        <div class="skel" style="height:80px"></div>
+        <div class="skel" style="height:80px"></div>
+        <div class="skel" style="height:80px"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Buscador Google -->
+  <div id="searchZone">
+    <div id="searchWrap">
+      <input type="text" id="searchInput" placeholder="Buscar en Google..." autocomplete="off">
+      <button id="searchBtn" title="Buscar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </button>
+    </div>
+    <div id="hints">
+      <button class="hint" data-query="USD a CUP">USD a CUP</button>
+      <button class="hint" data-query="EUR a CUP">EUR a CUP</button>
+      <button class="hint" data-query="BTC precio">BTC precio</button>
+      <button class="hint" data-query="tasas Cuba hoy">tasas Cuba hoy</button>
+    </div>
+  </div>
+
+  <!-- Year Progress Widget -->
+  <div id="yearWidget">
+    <div id="ywHdr">
+      <div id="ywTitle">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Progreso del Año
+      </div>
+      <div id="ywPct">--% <small>completado</small></div>
+    </div>
+    <div class="ptrack">
+      <div class="pfill" id="yearProgress" style="width:0%"></div>
+    </div>
+    <div id="mticks">
+      <span class="mtick past">Ene</span>
+      <span class="mtick past">Feb</span>
+      <span class="mtick past">Mar</span>
+      <span class="mtick past">Abr</span>
+      <span class="mtick past">May</span>
+      <span class="mtick past">Jun</span>
+      <span class="mtick now">Jul</span>
+      <span class="mtick">Ago</span>
+      <span class="mtick">Sep</span>
+      <span class="mtick">Oct</span>
+      <span class="mtick">Nov</span>
+      <span class="mtick">Dic</span>
+    </div>
+    <div id="ystats">
+      <div class="ystat">
+        <div class="ystat-v" id="daysPassed">--</div>
+        <div class="ystat-l">Días transcurridos</div>
+      </div>
+      <div class="ystat">
+        <div class="ystat-v" id="daysRemaining">--</div>
+        <div class="ystat-l">Días restantes</div>
+      </div>
+      <div class="ystat">
+        <div class="ystat-v" id="weeksLeft">--</div>
+        <div class="ystat-l">Semanas restantes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div id="foot">
+    <span>TASALO v0.1.0</span>
+    <span class="fdot"></span>
+    <span>Tasas del mercado informal cubano</span>
+    <span class="fdot"></span>
+    <a href="#" id="refreshLink">🔄 Actualizar</a>
+  </div>
+
+</div>
+
+<!-- SVG filters for glass effects -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="lg">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+    <filter id="lg-sm">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>
+      <feComposite in="SourceGraphic" in2="goo" operator="atop"/>
+    </filter>
+  </defs>
+</svg>
+
+<script src="newtab.js" type="module"></script>
+</body>
+</html>

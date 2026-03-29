@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TASALO — Configuración</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="logo-mark">💱</span>
+        <div>
+          <div class="brand">TASALO</div>
+          <div class="brand-sub">configuración</div>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-item active" data-section="general" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          General
+        </a>
+        <a class="nav-item" data-section="display" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Visualización
+        </a>
+        <a class="nav-item" data-section="currencies" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Monedas
+        </a>
+        <a class="nav-item" data-section="about" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Acerca de
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-ghost" id="btnReset">Restaurar defaults</button>
+        <button class="btn-primary" id="btnSave">Guardar cambios</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+
+      <!-- Toast de guardado -->
+      <div class="toast" id="toast">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Configuración guardada
+      </div>
+
+      <!-- ═══════════════════════════════════════════════
+           SECCIÓN: GENERAL
+           ═══════════════════════════════════════════════ -->
+      <section class="section active" id="section-general">
+        <div class="section-header">
+          <h2>Configuración General</h2>
+          <p>La extensión funciona automáticamente. Solo ajusta preferencias si lo deseas.</p>
+        </div>
+
+        <div class="info-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div>
+            <strong>✅ Listo para usar</strong>
+            <p>TASALO se conecta automáticamente a la API. No necesitas configurar nada más.</p>
+          </div>
+        </div>
+
+        <div class="fields">
+          <div class="field-group">
+            <label class="label">Intervalo de actualización</label>
+            <div class="range-row">
+              <input type="range" id="updateInterval" min="1" max="60" step="1" class="range" value="5">
+              <span class="range-val" id="updateIntervalVal">5 min</span>
+            </div>
+            <div class="range-marks">
+              <span>1 min</span>
+              <span>15 min</span>
+              <span>30 min</span>
+              <span>1 hora</span>
+            </div>
+            <p class="hint">Cada cuánto tiempo se actualizan las tasas automáticamente</p>
+          </div>
+
+          <div class="field-group">
+            <label class="label">Tema de la interfaz</label>
+            <div class="btn-group" id="themeGroup">
+              <button class="seg-btn active" data-val="auto">🤖 Automático</button>
+              <button class="seg-btn" data-val="dark">🌙 Oscuro</button>
+              <button class="seg-btn" data-val="light">☀️ Claro</button>
+            </div>
+            <p class="hint">El tema automático sigue la preferencia de tu sistema operativo</p>
+          </div>
+
+          <div class="toggles">
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Rotar ícono en la barra</span>
+                <span class="toggle-hint">Muestra diferentes monedas rotando en el ícono de la extensión</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="iconRotateEnabled" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Velocidad de rotación</span>
+                <span class="toggle-hint">Segundos que se muestra cada moneda en el ícono</span>
+              </div>
+              <div class="range-row" style="margin-top:8px">
+                <input type="range" id="iconRotateInterval" min="1" max="10" step="1" class="range" value="2">
+                <span class="range-val" id="iconRotateIntervalVal">2 seg</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════
+           SECCIÓN: VISUALIZACIÓN
+           ═══════════════════════════════════════════════ -->
+      <section class="section" id="section-display">
+        <div class="section-header">
+          <h2>Visualización</h2>
+          <p>Personaliza cómo se ven las tasas</p>
+        </div>
+
+        <div class="fields">
+          <div class="field-group">
+            <label class="label">Tamaño de fuente</label>
+            <div class="range-row">
+              <input type="range" id="fontSize" min="10" max="20" step="1" class="range" value="13">
+              <span class="range-val" id="fontSizeVal">13 px</span>
+            </div>
+          </div>
+
+          <div class="toggles">
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Mostrar banderas</span>
+                <span class="toggle-hint">Emoji de bandera junto al código de moneda</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="showCurrencyFlag" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Mostrar hora de actualización</span>
+                <span class="toggle-hint">Visible en el header del popup</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="showTimestamp" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Modo compacto</span>
+                <span class="toggle-hint">Reduce el espaciado para mostrar más información</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="compactMode">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field-group" style="margin-top:16px">
+            <label class="label">Colores de indicadores</label>
+            <div class="color-grid">
+              <div class="color-item">
+                <label class="label">Sube ▲</label>
+                <input type="color" id="colorUp" class="color-picker" value="#ff6b6b">
+              </div>
+              <div class="color-item">
+                <label class="label">Baja ▼</label>
+                <input type="color" id="colorDown" class="color-picker" value="#4ade80">
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════
+           SECCIÓN: MONEDAS
+           ═══════════════════════════════════════════════ -->
+      <section class="section" id="section-currencies">
+        <div class="section-header">
+          <h2>Monedas</h2>
+          <p>Selecciona qué monedas mostrar en el popup y new tab</p>
+        </div>
+
+        <div class="fields">
+          <p class="hint" style="margin-bottom:12px">
+            Las monedas se muestran en el orden que aparecen. Todas las monedas disponibles se obtienen automáticamente de la API.
+          </p>
+
+          <div class="currencies-list" id="currenciesList">
+            <!-- Se genera dinámicamente -->
+            <div class="empty-currencies">Cargando monedas disponibles...</div>
+          </div>
+
+          <div class="field-row" style="margin-top:12px">
+            <button class="btn-secondary" id="btnSelectAll">Seleccionar todas</button>
+            <button class="btn-secondary" id="btnSelectNone">Deseleccionar todas</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════
+           SECCIÓN: ACERCA DE
+           ═══════════════════════════════════════════════ -->
+      <section class="section" id="section-about">
+        <div class="section-header">
+          <h2>Acerca de TASALO</h2>
+          <p>Información de la extensión y créditos</p>
+        </div>
+
+        <div class="about-content">
+          <div class="about-logo">
+            <span class="logo-mark-large">💱</span>
+            <h1>TASALO</h1>
+            <p class="version">Versión 0.2.0</p>
+          </div>
+
+          <div class="about-info">
+            <h3>📊 Tasas de Cambio Cuba</h3>
+            <p>TASALO te muestra las tasas de cambio del mercado informal y oficial cubano en tiempo real, directamente en tu navegador.</p>
+
+            <h4>Fuentes de datos</h4>
+            <ul class="sources-list">
+              <li>✅ <strong>El Toque</strong> — Mercado informal</li>
+              <li>✅ <strong>BCC</strong> — Banco Central de Cuba (oficial)</li>
+              <li>✅ <strong>CADECA</strong> — Casas de cambio</li>
+              <li>✅ <strong>Binance</strong> — Criptomonedas</li>
+            </ul>
+
+            <h4>Características</h4>
+            <ul class="features-list">
+              <li>🔄 Actualización automática cada 5 minutos</li>
+              <li>🎨 Diseño Liquid Glass (oscuro/claro)</li>
+              <li>🔍 Búsqueda rápida desde la barra de direcciones (escribe <code>tsl</code>)</li>
+              <li>📊 Dashboard en nueva pestaña</li>
+              <li>💱 Ticker de criptomonedas Binance</li>
+            </ul>
+
+            <div class="about-links">
+              <a href="https://github.com/TASALO-TEAM/taso-ext" target="_blank" class="btn-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/><path d="M10 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"/></svg>
+                GitHub
+              </a>
+              <a href="https://tasalo.duckdns.org" target="_blank" class="btn-link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Abrir taso-api
+              </a>
+            </div>
+          </div>
+
+          <div class="about-footer">
+            <p><strong>Nota:</strong> Las tasas mostradas son referenciales y pueden variar. Siempre verifica con la fuente oficial.</p>
+            <p class="disclaimer">TASALO no es una aplicación oficial. Los datos se obtienen de fuentes públicas.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
