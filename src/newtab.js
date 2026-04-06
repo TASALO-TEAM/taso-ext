@@ -196,82 +196,89 @@ function setupYearProgress() {
 async function loadRates() {
   try {
     const data = await browser.storage.local.get([
-      'currentRates', 
-      'rateChanges', 
+      'currentRates',
+      'rateChanges',
       'binanceRates',
-      'lastUpdated'
+      'lastUpdated',
+      'eltoqueRates',
+      'bccRates',
+      'cadecaRates'
     ]);
-    
+
+    // Use source-specific rates for each panel
     currentRates = data.currentRates || {};
     rateChanges = data.rateChanges || {};
     binanceRates = data.binanceRates || {};
-    
-    renderElToquePanel();
-    renderBccPanel();
+
+    // Store source-specific rates
+    const eltoqueRates = data.eltoqueRates || {};
+    const bccRates = data.bccRates || {};
+
+    renderElToquePanel(eltoqueRates);
+    renderBccPanel(bccRates);
     renderBinanceTicker();
-    
+
   } catch (error) {
     console.error('Error loading rates:', error);
   }
 }
 
-function renderElToquePanel() {
+function renderElToquePanel(eltoqueRates) {
   const grid = document.getElementById('eltoqueGrid');
   if (!grid) return;
-  
+
   // ElToque currencies (informal market)
   const eltoqueCurrencies = ['EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT'];
-  
+
   grid.innerHTML = '';
-  
+
   for (const currency of eltoqueCurrencies) {
-    const rate = currentRates[currency];
+    const rate = eltoqueRates[currency];
     if (rate === undefined) continue;
-    
+
     const change = rateChanges[currency] || 'neutral';
     const meta = CURRENCY_META[currency] || { name: currency, flag: '💱' };
-    const prev = currentRates[`${currency}_prev`]; // Previous rate for comparison
-    
+
     const card = createRateCard(currency, rate, change, meta, 'CUP');
     grid.appendChild(card);
   }
-  
+
   // Update timestamp
   const updEl = document.getElementById('eltoqueUpd');
   if (updEl) {
-    updEl.textContent = new Date().toLocaleTimeString('es-CU', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    updEl.textContent = new Date().toLocaleTimeString('es-CU', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 }
 
-function renderBccPanel() {
+function renderBccPanel(bccRates) {
   const grid = document.getElementById('bccGrid');
   if (!grid) return;
-  
+
   // BCC currencies (official market)
   const bccCurrencies = ['EUR', 'USD', 'CAD', 'GBP', 'CHF', 'MXN'];
-  
+
   grid.innerHTML = '';
-  
+
   for (const currency of bccCurrencies) {
-    const rate = currentRates[currency];
+    const rate = bccRates[currency];
     if (rate === undefined) continue;
-    
+
     const change = rateChanges[currency] || 'neutral';
     const meta = CURRENCY_META[currency] || { name: currency, flag: '💱' };
-    
+
     const card = createRateCard(currency, rate, change, meta, 'CUP');
     grid.appendChild(card);
   }
-  
+
   // Update timestamp
   const updEl = document.getElementById('bccUpd');
   if (updEl) {
-    updEl.textContent = new Date().toLocaleTimeString('es-CU', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    updEl.textContent = new Date().toLocaleTimeString('es-CU', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 }

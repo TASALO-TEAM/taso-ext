@@ -5,8 +5,8 @@
 // ═══════════════════════════════════════════════
 //  API Configuration - PRODUCTION URL
 // ═══════════════════════════════════════════════
-export const DEFAULT_API_URL = 'https://tasalo.duckdns.org';
-export const PRODUCTION_API_URL = 'https://tasalo.duckdns.org';
+export const DEFAULT_API_URL = 'http://tasalo.duckdns.org:8040';
+export const PRODUCTION_API_URL = 'http://tasalo.duckdns.org:8040';
 
 export const ALARMS = {
   REFRESH: 'tasalo-refresh',

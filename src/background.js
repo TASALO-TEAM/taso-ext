@@ -22,6 +22,9 @@ const browser = globalThis.browser || chrome;
 let cachedRates = {};
 let cachedChanges = {};
 let cachedBinanceRates = {};
+let cachedEltoqueRates = {};
+let cachedBccRates = {};
+let cachedCadecaRates = {};
 let cachedSettings = deepClone(DEFAULT_SETTINGS);
 
 // ═══════════════════════════════════════════════
@@ -31,12 +34,16 @@ let cachedSettings = deepClone(DEFAULT_SETTINGS);
 // ═══════════════════════════════════════════════
 async function loadStateFromStorage() {
   const stored = await browser.storage.local.get([
-    'settings', 'currentRates', 'rateChanges', 'binanceRates'
+    'settings', 'currentRates', 'rateChanges', 'binanceRates',
+    'eltoqueRates', 'bccRates', 'cadecaRates'
   ]);
   if (stored.settings)      cachedSettings     = { ...deepClone(DEFAULT_SETTINGS), ...stored.settings };
   if (stored.currentRates)  cachedRates        = stored.currentRates;
   if (stored.rateChanges)   cachedChanges      = stored.rateChanges;
   if (stored.binanceRates)  cachedBinanceRates = stored.binanceRates;
+  if (stored.eltoqueRates)  cachedEltoqueRates = stored.eltoqueRates;
+  if (stored.bccRates)      cachedBccRates     = stored.bccRates;
+  if (stored.cadecaRates)   cachedCadecaRates  = stored.cadecaRates;
 }
 
 // ═══════════════════════════════════════════════
@@ -72,15 +79,15 @@ async function setupAlarms() {
   const interval = cachedSettings.updateInterval ?? 5;
 
   browser.alarms.create(ALARMS.REFRESH, {
-    delayInMinutes: interval,
+    delayInMinutes: 0.1,
     periodInMinutes: interval,
   });
 
-  // Alarma de rotación: cada 1 minuto (mínimo permitido en Chrome MV3).
+  // Alarma de rotación: cada 10 minuto (mínimo permitido en Chrome MV3).
   // rotateIcon() calcula cuántos pasos de N segundos caben en el tiempo transcurrido.
   browser.alarms.create(ALARMS.ROTATE, {
-    delayInMinutes: 1,
-    periodInMinutes: 1,
+    delayInMinutes: 10,
+    periodInMinutes: 10,
   });
 
   log(`Alarms set: refresh every ${interval} min, rotate every 1 min`, 'CONFIG');
@@ -117,30 +124,43 @@ async function fetchRates() {
 
     if (!data.ok || !data.data) throw new Error('Invalid API response structure');
 
-    const rates      = extractAllRates(data.data);
+    // Extract rates from each source separately
+    const eltoqueRates = parseSourceRates(data.data.eltoque, 'eltoque');
+    const bccRates = parseSourceRates(data.data.bcc, 'bcc');
+    const cadecaRates = parseSourceRates(data.data.cadeca, 'cadeca');
+    
+    // All rates combined (for backward compatibility)
+    const allRates = { ...eltoqueRates, ...bccRates, ...cadecaRates };
+    
     const binanceRates = extractBinanceRates(data.data.binance);
-    const changes    = calculateChanges(rates, cachedRates);
+    const changes = calculateChanges(allRates, cachedRates);
 
-    cachedRates        = rates;
+    cachedRates        = allRates;
     cachedChanges      = changes;
     cachedBinanceRates = binanceRates;
+    cachedEltoqueRates = eltoqueRates;
+    cachedBccRates     = bccRates;
+    cachedCadecaRates  = cadecaRates;
 
     const now = new Date().toISOString();
     await browser.storage.local.set({
-      currentRates:  rates,
+      currentRates:  allRates,
+      eltoqueRates:  eltoqueRates,
+      bccRates:      bccRates,
+      cadecaRates:   cadecaRates,
       rateChanges:   changes,
       binanceRates:  binanceRates,
       lastUpdated:   now,
       fetchError:    null,
     });
 
-    log(`✅ Fetched ${Object.keys(rates).length} rates, ${Object.keys(binanceRates).length} binance`, 'SUCCESS');
+    log(`✅ Fetched: ElToque=${Object.keys(eltoqueRates).length}, BCC=${Object.keys(bccRates).length}, CADECA=${Object.keys(cadecaRates).length}, Binance=${Object.keys(binanceRates).length}`, 'SUCCESS');
 
     await updateBadge();
 
     broadcastToTabs({
       type: 'RATES_UPDATED',
-      rates,
+      rates: allRates,
       changes,
       binanceRates,
       lastUpdated: now,
@@ -151,14 +171,6 @@ async function fetchRates() {
     await browser.storage.local.set({ fetchError: error.message });
     setBadgeText('ERR', '#dc2626');
   }
-}
-
-function extractAllRates(data) {
-  const rates = {};
-  for (const source of ['eltoque', 'cadeca', 'bcc']) {
-    if (data[source]) Object.assign(rates, parseSourceRates(data[source], source));
-  }
-  return rates;
 }
 
 function extractBinanceRates(binanceData) {
@@ -214,46 +226,56 @@ function calculateChanges(current, previous) {
 // ═══════════════════════════════════════════════
 //  Icon Badge
 // ═══════════════════════════════════════════════
+
+// Get USD rate from selected source only
+function getSelectedSourceUSDRate() {
+  const source = cachedSettings.sourcePreference || 'eltoque';
+  
+  // Try to get USD from source-specific rates first
+  if (source === 'eltoque' && cachedEltoqueRates && cachedEltoqueRates['USD'] !== undefined) {
+    return { rate: cachedEltoqueRates['USD'], change: cachedChanges['USD'] };
+  }
+  if (source === 'bcc' && cachedBccRates && cachedBccRates['USD'] !== undefined) {
+    return { rate: cachedBccRates['USD'], change: cachedChanges['USD'] };
+  }
+  if (source === 'cadeca' && cachedCadecaRates && cachedCadecaRates['USD'] !== undefined) {
+    return { rate: cachedCadecaRates['USD'], change: cachedChanges['USD'] };
+  }
+  
+  // Fallback to combined rates
+  if (cachedRates['USD'] !== undefined) {
+    return { rate: cachedRates['USD'], change: cachedChanges['USD'] };
+  }
+  
+  return null;
+}
+
 async function updateBadge() {
-  const rate = cachedRates['USD'];
-  if (rate !== undefined) {
-    setBadgeText(formatBadgeValue(rate), getBadgeColor(cachedChanges['USD']));
-    try { browser.action.setTitle({ title: `TASALO — USD: ${formatBadgeValue(rate)} CUP` }); } catch (e) {}
+  const usdData = getSelectedSourceUSDRate();
+  if (usdData) {
+    const { rate, change } = usdData;
+    setBadgeText(formatBadgeValue(rate), getBadgeColor(change));
+    try { 
+      browser.action.setTitle({ 
+        title: `TASALO — USD (${sourceToLabel(cachedSettings.sourcePreference)}): ${formatBadgeValue(rate)} CUP` 
+      }); 
+    } catch (e) {}
   }
 }
 
-// ✅ FIX: rotateIcon ahora funciona porque loadStateFromStorage() fue llamado antes
+function sourceToLabel(source) {
+  switch (source) {
+    case 'eltoque': return 'ElToque';
+    case 'bcc': return 'BCC';
+    case 'cadeca': return 'CADECA';
+    default: return 'USD';
+  }
+}
+
+// ✅ Badge now shows only USD from selected source (no rotation)
 async function rotateIcon() {
-  if (!cachedSettings.iconRotateEnabled) {
-    await updateBadge();
-    return;
-  }
-
-  const currencies = getOrderedCurrencies();
-  if (currencies.length === 0) return;
-
-  const data  = await browser.storage.local.get('rotateState');
-  const state = data.rotateState || { index: 0, lastTime: Date.now() };
-
-  // Calcular cuántos pasos de N segundos caben en el tiempo transcurrido
-  const intervalMs = (cachedSettings.iconRotateInterval || 2) * 1000;
-  const elapsed    = Date.now() - state.lastTime;
-  const steps      = Math.max(1, Math.floor(elapsed / intervalMs));
-  const newIndex   = (state.index + steps) % currencies.length;
-
-  await browser.storage.local.set({
-    rotateState: { index: newIndex, lastTime: Date.now() }
-  });
-
-  const currency = currencies[newIndex];
-  const rate     = cachedRates[currency];
-
-  if (rate !== undefined) {
-    setBadgeText(formatBadgeValue(rate), getBadgeColor(cachedChanges[currency]));
-    try {
-      browser.action.setTitle({ title: `TASALO — ${currency}: ${formatBadgeValue(rate)} CUP` });
-    } catch (e) {}
-  }
+  // Always use selected source USD rate (no rotation to avoid confusion)
+  await updateBadge();
 }
 
 function getOrderedCurrencies() {
@@ -332,6 +354,10 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     // Resetear índice de rotación si cambió la configuración
     browser.storage.local.set({ rotateState: { index: 0, lastTime: Date.now() } });
     setupAlarms();
+    // Actualizar badge si cambió la fuente seleccionada
+    if (msg.settings.sourcePreference) {
+      updateBadge();
+    }
     sendResponse({ ok: true });
   }
 });

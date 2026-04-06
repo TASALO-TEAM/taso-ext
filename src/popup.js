@@ -41,15 +41,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyColors();
   renderAll();
   attachListeners();
+  renderSourceSwitch(); // Render source switch state
 });
 
 async function loadData() {
   const data = await browser.storage.local.get([
     'settings', 'currentRates', 'previousRates',
-    'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError'
+    'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError',
+    'eltoqueRates', 'bccRates', 'cadecaRates'
   ]);
   settings = data.settings ?? {};
-  currentRates = data.currentRates ?? {};
+
+  // Seleccionar tasas de la fuente preferida (no la mezcla)
+  const pref = settings.sourcePreference || 'eltoque';
+  if (pref === 'bcc' && data.bccRates && Object.keys(data.bccRates).length > 0) {
+    currentRates = data.bccRates;
+  } else if (pref === 'cadeca' && data.cadecaRates && Object.keys(data.cadecaRates).length > 0) {
+    currentRates = data.cadecaRates;
+  } else if (data.eltoqueRates && Object.keys(data.eltoqueRates).length > 0) {
+    currentRates = data.eltoqueRates;
+  } else {
+    // fallback: usar currentRates genérico si aún no hay datos por fuente
+    currentRates = data.currentRates ?? {};
+  }
+
   previousRates = data.previousRates ?? {};
   rateChanges = data.rateChanges ?? {};
   binanceRates = data.binanceRates ?? {};
@@ -107,6 +122,54 @@ function renderAll() {
 function getSourcePreference() {
   // Por defecto: ElToque
   return settings.sourcePreference || 'eltoque';
+}
+
+// ── Render Source Switch ─────────────────────────────────
+function renderSourceSwitch() {
+  const currentSource = getSourcePreference();
+  const sourceBtns = document.querySelectorAll('.source-btn');
+  
+  sourceBtns.forEach(btn => {
+    const source = btn.dataset.source;
+    if (source === currentSource) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  
+  // Update footer text based on source
+  const footerSource = document.querySelector('.footer-source');
+  if (footerSource) {
+    const sourceNames = {
+      'eltoque': 'El Toque (Informal)',
+      'bcc': 'BCC (Oficial)',
+      'cadeca': 'CADECA'
+    };
+    const sourceName = sourceNames[currentSource] || 'El Toque (Informal)';
+    footerSource.innerHTML = `<span class="footer-dot"></span>TASALO — Tasas de ${sourceName}`;
+  }
+}
+
+// ── Handle Source Switch ─────────────────────────────────
+async function handleSourceSwitch(newSource) {
+  const currentSource = getSourcePreference();
+  if (newSource === currentSource) return;
+  
+  // Update settings
+  settings.sourcePreference = newSource;
+  await browser.storage.local.set({ settings });
+  
+  // Notify background script
+  await browser.runtime.sendMessage({ 
+    type: 'UPDATE_SETTINGS', 
+    settings: { sourcePreference: newSource } 
+  });
+  
+  // Re-render
+  renderSourceSwitch();
+  await loadData();
+  renderAll();
 }
 
 // ── Obtener monedas de la fuente seleccionada ───────────────────────────
@@ -266,6 +329,17 @@ function applyColors() {
 
 // ── Listeners ─────────────────────────────────
 function attachListeners() {
+  // Source Switch
+  const sourceSwitch = document.getElementById('sourceSwitch');
+  if (sourceSwitch) {
+    sourceSwitch.addEventListener('click', (e) => {
+      const btn = e.target.closest('.source-btn');
+      if (btn && btn.dataset.source) {
+        handleSourceSwitch(btn.dataset.source);
+      }
+    });
+  }
+
   const btnRefresh = document.getElementById('btnRefresh');
   const btnSettings = document.getElementById('btnSettings');
   const tickerToggle = document.getElementById('tickerToggle');
@@ -275,19 +349,31 @@ function attachListeners() {
       btnRefresh.classList.add('spinning');
       btnRefresh.disabled = true;
       setDot('loading');
-      
+
       try {
         await browser.runtime.sendMessage({ type: 'FETCH_NOW' });
-        
-        // Recargar datos incluyendo binanceRates
+
+        // Recargar datos incluyendo las tasas por fuente
         const data = await browser.storage.local.get([
-          'currentRates', 'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError'
+          'currentRates', 'rateChanges', 'binanceRates', 
+          'lastUpdated', 'fetchError', 'eltoqueRates', 'bccRates', 'cadecaRates'
         ]);
-        
-        currentRates = data.currentRates || {};
+
+        // Aplicar la misma lógica de selección de fuente
+        const pref = settings.sourcePreference || 'eltoque';
+        if (pref === 'bcc' && data.bccRates && Object.keys(data.bccRates).length > 0) {
+          currentRates = data.bccRates;
+        } else if (pref === 'cadeca' && data.cadecaRates && Object.keys(data.cadecaRates).length > 0) {
+          currentRates = data.cadecaRates;
+        } else if (data.eltoqueRates && Object.keys(data.eltoqueRates).length > 0) {
+          currentRates = data.eltoqueRates;
+        } else {
+          currentRates = data.currentRates || {};
+        }
+
         rateChanges = data.rateChanges || {};
         binanceRates = data.binanceRates || {};
-        
+
         renderAll();
       } catch (error) {
         console.error('Refresh error:', error);
@@ -314,11 +400,15 @@ function attachListeners() {
 }
 
 const debouncedStorageUpdate = debounce(async (changes) => {
-  if (changes.currentRates || changes.rateChanges || changes.binanceRates || changes.lastUpdated || changes.fetchError) {
-    if (changes.currentRates) currentRates = changes.currentRates.newValue || {};
-    if (changes.rateChanges) rateChanges = changes.rateChanges.newValue || {};
-    if (changes.binanceRates) binanceRates = changes.binanceRates.newValue || {};
-    
+  if (changes.currentRates || changes.rateChanges || changes.binanceRates || changes.lastUpdated || changes.fetchError || changes.eltoqueRates || changes.bccRates || changes.cadecaRates) {
+    if (changes.eltoqueRates || changes.bccRates || changes.cadecaRates) {
+      // Re-evaluate source preference when source-specific rates change
+      await loadData();
+    } else {
+      if (changes.currentRates) currentRates = changes.currentRates.newValue || {};
+      if (changes.rateChanges) rateChanges = changes.rateChanges.newValue || {};
+      if (changes.binanceRates) binanceRates = changes.binanceRates.newValue || {};
+    }
     await loadData();
     renderAll();
   }

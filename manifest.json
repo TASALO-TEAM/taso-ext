@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "TASALO",
   "short_name": "TASALO",
-  "version": "0.4.3",
+  "version": "0.4.5",
   "description": "Tasas de cambio Cuba - El Toque, BCC, Binance",
   "icons": {
     "16": "icons/icon16.png",
@@ -38,6 +38,6 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://tasalo.duckdns.org/*"
+    "http://tasalo.duckdns.org:8040/*"
   ]
 }
