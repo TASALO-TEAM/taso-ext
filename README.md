@@ -1,51 +1,81 @@
-# TASALO Browser Extension
+# TASALO — Tasas de Cambio Cuba 💱
 
-> Cuban exchange rates in your browser — Liquid Glass design
+> Tasas de cambio del dólar en Cuba en tu navegador — Diseño Liquid Glass
 
-[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://github.com/TASALO-TEAM/taso-ext)
+[![Version](https://img.shields.io/badge/version-0.4.5-blue.svg)](https://github.com/TASALO-TEAM/taso-ext)
 [![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-## 🌟 Features
+## 🌟 ¿Qué es TASALO?
 
-- 💱 **Tasas en tiempo real** — El Toque, BCC, CADECA y Binance
-- 🎨 **Liquid Glass design** — Hermoso diseño glassmorphism (dark/light)
-- ⚡ **Auto-refresh** — Actualización cada 5 minutos (configurable)
+TASALO te muestra las tasas de cambio del **dólar en Cuba** en tiempo real, directamente en tu navegador. Consulta precios del mercado informal (El Toque), oficial (BCC) y criptomonedas (Binance) sin abrir ninguna página web.
+
+## ✨ Características
+
+- 💱 **Tasas en tiempo real** — El Toque, BCC y Binance
+- 🎨 **Liquid Glass design** — Diseño glassmorphism elegante (dark/light)
+- ⚡ **Auto-refresh** — Actualización automática cada 5 minutos
+- 🔀 **Switch de fuente** — Cambia entre El Toque y BCC con un clic
 - 🔍 **Omnibox** — Búsqueda rápida (`tsl` + moneda)
 - 🗂 **New Tab Dashboard** — Panel completo al abrir nueva pestaña
 - ⚙️ **Plug & play** — Funciona al instalar, sin configuración
 
-## 📦 Installation
+## 📦 Instalación
 
-### Development
+### Chrome, Edge, Brave y derivados (Chromium)
 
-#### Chrome/Edge/Brave
+> **Compatible con:** Google Chrome, Microsoft Edge, Brave, Opera, Arc y cualquier navegador basado en Chromium.
 
-1. Abre `chrome://extensions/` (o `edge://extensions/`)
-2. Activa **"Developer mode"** (arriba a la derecha)
-3. Click en **"Load unpacked"**
-4. Selecciona la carpeta `taso-ext/`
-5. ✅ ¡Listo! El ícono de TASALO aparecerá en tu barra
+#### Paso 1: Descargar la extensión
 
-#### Firefox
+1. Ve a https://github.com/TASALO-TEAM/taso-ext
+2. Click en el botón verde **Code** → **Download ZIP**
+3. Extrae el ZIP en una carpeta de tu computadora (ej: `tasalo-ext/`)
 
-1. Abre `about:debugging#/runtime/this-firefox`
-2. Click en **"Load Temporary Add-on"**
-3. Navega a `taso-ext/` y selecciona `manifest.json`
-4. ✅ ¡Listo! (Nota: temporal, se borra al cerrar Firefox)
+#### Paso 2: Cargar en tu navegador
 
-### Production
+**Google Chrome:**
+1. Abre `chrome://extensions/` en la barra de direcciones
+2. Activa **"Modo desarrollador"** (interruptor arriba a la derecha)
+3. Click en **"Cargada"** (o "Load unpacked" en inglés)
+4. Selecciona la carpeta `tasalo-ext/` que extrajiste
+5. ✅ ¡Listo! Verás el ícono de TASALO en tu barra de extensiones
 
-Próximamente en:
-- [Chrome Web Store](#) (en desarrollo)
-- [Firefox Add-ons](#) (en desarrollo)
+**Microsoft Edge:**
+1. Abre `edge://extensions/`
+2. Activa **"Modo desarrollador"** (panel izquierdo, abajo)
+3. Click en **"Cargar descomprimida"**
+4. Selecciona la carpeta `tasalo-ext/`
+5. ✅ ¡Listo!
 
-## 🚀 Usage
+**Brave:**
+1. Abre `brave://extensions/`
+2. Activa **"Modo desarrollador"** (arriba a la derecha)
+3. Click en **"Cargar sin empaquetar"**
+4. Selecciona la carpeta `tasalo-ext/`
+5. ✅ ¡Listo!
+
+#### Paso 3: Verificar que funciona
+
+1. Click en el ícono de TASALO (azul con "T") en tu barra de extensiones
+2. Deberías ver las tasas actuales con diseño glassmorphism
+3. Si no ves datos, verifica que taso-api esté corriendo en `http://tasalo.duckdns.org:8040`
+
+> **Nota:** La extensión se actualiza automáticamente cada 5 minutos. Puedes forzar una actualización con el botón 🔄 en el popup.
+
+### Firefox
+
+> **Importante:** Esta es la versión para Chromium. Para Firefox, usa [taso-extmf](https://github.com/TASALO-TEAM/taso-extmf).
+
+- 🔗 **Firefox Desktop:** https://github.com/TASALO-TEAM/taso-extmf
+- 🔗 **Firefox Android:** https://addons.mozilla.org/es-ES/firefox/addon/tasalo-cambio-cuba-android/
+
+## 🚀 Uso
 
 ### Popup (Click en el ícono)
 
-- Muestra tasas principales en tarjetas glassmorphism
-- Ticker deslizable con todas las monedas
+- Muestra tasas de **El Toque** o **BCC** (cambia con los switches)
+- **Ticker Binance** deslizable con criptomonedas
 - Botón 🔄 para actualizar manualmente
 - Botón ⚙️ para configuración
 
@@ -55,12 +85,13 @@ Próximamente en:
 - **Panel ElToque** (izquierda) — Mercado informal
 - **Panel BCC** (derecha) — Mercado oficial
 - **Buscador Google** — Búsqueda rápida
-- **Year Progress** — Progreso del año en curso
 - **Reloj** — Hora y fecha actual
+
+> **Nota:** Puedes desactivar el New Tab Dashboard desde Options si prefieres tu página de nueva pestaña actual.
 
 ### Omnibox (Barra de direcciones)
 
-Escribe en la barra de Chrome:
+Escribe en la barra de tu navegador:
 
 ```
 tsl          → Ver todas las tasas
@@ -69,7 +100,7 @@ tsl EUR      → Ver tasa del Euro
 tsl BTC      → Ver precio de Bitcoin
 ```
 
-### Options Page (Configuración)
+### Options (Configuración)
 
 Click derecho en el ícono → **"Options"** o **"Opciones"**
 
@@ -77,19 +108,19 @@ Configurable:
 - ⏱️ Intervalo de actualización (1-60 minutos)
 - 🎨 Tema (Auto / Oscuro / Claro)
 - 💱 Monedas visibles
+- 🔀 Switch de fuente (El Toque / BCC)
 - 🎨 Colores de indicadores (sube/baja)
 - 📏 Tamaño de fuente
-- 🏴 Mostrar/ocultar banderas
-- 🔄 Rotación de ícono
+- 🗂 New Tab activado/desactivado
 
-## 🏗️ Architecture
+## 🏗️ Arquitectura
 
 ```
 ┌─────────────────────────┐
 │  taso-api               │
 │  FastAPI (Port 8040)    │
 │  Production:            │
-│  tasalo.duckdns.org     │
+│  tasalo.duckdns.org:8040│
 └───────────┬─────────────┘
             │
             │ REST API
@@ -103,8 +134,10 @@ Configurable:
 │                         │
 │  - Auto refresh 5min    │
 │  - Cache local          │
-│  - Icon rotation        │
+│  - Badge rotation       │
+│  - State restoration    │
 │  - Omnibox              │
+│  - Broadcast a tabs     │
 └───────────┬─────────────┘
             │
             │ chrome.storage.local
@@ -118,39 +151,37 @@ Configurable:
 └─────────────────────────┘
 ```
 
-## 📁 Project Structure
+## 📁 Estructura del Proyecto
 
 ```
 taso-ext/
 ├── manifest.json          # Extension manifest (V3)
+├── RELEASE_NOTES.md       # Notas de versión
 ├── icons/
 │   ├── icon16.png        # 16x16px
-│   ├── icon32.png        # 32x32px
 │   ├── icon48.png        # 48x48px
 │   └── icon128.png       # 128x128px
 ├── src/
 │   ├── background.js      # Service worker
-│   ├── constants.js       # Shared constants
+│   ├── constants.js       # Constantes compartidas
 │   ├── popup.html         # Popup UI
 │   ├── popup.css          # Popup styles
 │   ├── popup.js           # Popup logic
 │   ├── newtab.html        # New tab page
-│   ├── newtab.css         # New tab styles
 │   ├── newtab.js          # New tab logic
 │   ├── options.html       # Options page
 │   ├── options.css        # Options styles
 │   └── options.js         # Options logic
-├── README.md
-└── AGENTS.md
+└── README.md
 ```
 
-## 🛠️ Development
+## 🛠️ Desarrollo
 
-### Prerequisites
+### Requisitos
 
-- Node.js 18+ (para desarrollo)
-- Chrome 88+ o Firefox 109+
+- Chromium 88+ o Firefox 109+ (para desarrollo)
 - taso-api corriendo (local o producción)
+- **No requiere build** — JavaScript vanilla, sin dependencias
 
 ### Setup
 
@@ -158,45 +189,42 @@ taso-ext/
 cd taso-ext
 
 # No build needed - vanilla JS
-# Just load in browser as unpacked extension
+# Solo carga como extensión sin empaquetar
 ```
 
-### API Configuration
+### Configuración de API
 
 La extensión usa por defecto:
 
-- **Desarrollo:** `http://localhost:8040`
-- **Producción:** `https://tasalo.duckdns.org`
-
-**No requiere configuración del usuario** - funciona automáticamente.
+- **Producción:** `http://tasalo.duckdns.org:8040`
+- **No requiere configuración** — funciona al instalar
 
 ### Testing Checklist
 
-#### Functional Tests
+#### Funcional
 
-- [ ] **Popup loads** con tasas de la API
-- [ ] **New Tab** muestra 2 paneles (ElToque + BCC)
+- [ ] **Popup carga** con tasas de la API
+- [ ] **Switch de fuente** cambia entre ElToque/BCC
+- [ ] **New Tab** muestra dashboard completo
 - [ ] **Ticker Binance** muestra criptomonedas
 - [ ] **Omnibox** sugiere monedas al escribir `tsl`
 - [ ] **Auto-refresh** funciona (esperar 5 min)
-- [ ] **Manual refresh** (botón 🔄) actualiza tasas
+- [ ] **Manual refresh** (botón 🔄) actualiza
 - [ ] **Options save** correctamente
-- [ ] **Theme toggle** cambia entre dark/light/auto
 
-#### Visual Tests
+#### Visual
 
 - [ ] **Glassmorphism** se ve en todos los componentes
 - [ ] **Blobs animados** en el fondo
 - [ ] **Indicadores** 🔺/🔻/― muestran cambios
 - [ ] **Responsive** en móvil (1 columna)
-- [ ] **Skeleton loaders** mientras carga
 
-#### Browser Tests
+#### Navegadores
 
-- [ ] **Chrome** - Funciona correctamente
-- [ ] **Edge** - Compatible (Chromium)
-- [ ] **Brave** - Compatible (Chromium)
-- [ ] **Firefox** - Compatible (manifest V3)
+- [ ] **Chrome** — Funciona correctamente
+- [ ] **Edge** — Compatible (Chromium)
+- [ ] **Brave** — Compatible (Chromium)
+- [ ] **Firefox** — Usa [taso-extmf](https://github.com/TASALO-TEAM/taso-extmf)
 
 ### Debugging
 
@@ -216,31 +244,19 @@ La extensión usa por defecto:
 2. Click derecho → **"Inspect"**
 3. Ver console logs
 
-### Logs
-
-La extensión usa logging estructurado:
-
-```
-[2026-03-28T21:00:00.000Z] [INFO] Extension installed
-[2026-03-28T21:00:00.000Z] [FETCH] Fetching from http://localhost:8040
-[2026-03-28T21:00:01.000Z] [SUCCESS] ✅ Fetched 15 rates
-[2026-03-28T21:00:01.000Z] [ALARM] Alarm triggered: refresh
-```
-
-## 📊 Data Sources
+## 📊 Fuentes de Datos
 
 | Fuente | Tipo | Monedas | Update |
 |--------|------|---------|--------|
 | **El Toque** | Informal | USD, EUR, MLC, BTC, TRX, USDT | 5 min |
 | **BCC** | Oficial | EUR, USD, CAD, GBP, CHF, MXN | 5 min |
-| **CADECA** | Oficial | EUR, USD, MLC, etc. | 5 min |
 | **Binance** | Crypto | 20+ criptomonedas | 5 min |
 
 ## 🎨 Design System
 
 ### Liquid Glass
 
-El diseño usa glassmorphism avanzado:
+Diseño glassmorphism avanzado:
 
 - **Backdrop blur** — Efecto vidrio esmerilado
 - **Bordes brillantes** — Bordes sutiles con gradientes
@@ -248,7 +264,7 @@ El diseño usa glassmorphism avanzado:
 - **Fondos semitransparentes** — Capas de vidrio
 - **Blobs animados** — Fondos de colores en movimiento
 
-### Color Palette
+### Paleta de Colores
 
 ```css
 /* Dark Theme */
@@ -264,123 +280,76 @@ El diseño usa glassmorphism avanzado:
 --down: #16a34a;
 ```
 
-### Typography
+### Tipografía
 
 - **UI:** Space Grotesk
-- **Rates:** JetBrains Mono (monospace)
-
-## 🔧 Configuration
-
-### Default Settings
-
-```javascript
-{
-  apiUrl: 'http://localhost:8040',  // Hardcoded
-  updateInterval: 5,                 // minutes
-  colorBg: 'auto',                   // auto/dark/light
-  fontSize: 13,                      // pixels
-  showCurrencyFlag: true,
-  showTimestamp: true,
-  iconRotateEnabled: true,
-  iconRotateInterval: 2,             // seconds
-  selectedCurrencies: [],            // all
-}
-```
-
-### Reset Settings
-
-Para restaurar configuración de fábrica:
-
-1. Abrir Options Page
-2. Click en **"Restaurar defaults"**
-3. Confirmar
-
-O desde la consola del service worker:
-
-```javascript
-await chrome.storage.local.clear();
-location.reload();
-```
-
-## 🐛 Troubleshooting
-
-### "No data" / "Error al conectar"
-
-**Causa:** taso-api no está corriendo o CORS no está habilitado
-
-**Solución:**
-1. Verificar taso-api: `curl http://localhost:8040/api/v1/tasas/latest`
-2. Verificar CORS en taso-api
-3. Revisar logs del service worker
-
-### Icon not showing
-
-**Causa:** Iconos no se cargaron
-
-**Solución:**
-1. Recargar extensión (`chrome://extensions/` → reload)
-2. Verificar que `icons/` tiene los 4 PNGs
-
-### Styles not loading
-
-**Causa:** Rutas CSS incorrectas
-
-**Solución:**
-1. Verificar que los archivos `.css` existen en `src/`
-2. Recargar extensión
-
-### Omnibox not working
-
-**Causa:** Keyword `tsl` no está registrada
-
-**Solución:**
-1. Verificar `manifest.json` → `omnibox.keyword`
-2. Recargar extensión
+- **Tasas:** JetBrains Mono (monospace)
 
 ## 📝 Changelog
 
+### 0.4.5 (2026-04-02)
+
+- ✅ **Rotación en logo**: ahora muestra solo USD de la fuente seleccionada
+- ✅ **Switches de fuente**: botones para cambiar entre ElToque/BCC
+- ✅ **Mejoras visuales**: dimensión de popup reajugada
+
+### 0.4.4 (2026-04-02)
+
+- ✅ **URL de API corregida**: puerto 8040 (no 443)
+- ✅ **Permisos de host actualizados**: `http://tasalo.duckdns.org:8040/*`
+- ✅ **Primera actualización más rápida**: 6 segundos vs 5 minutos
+
+### 0.4.3 (2026-03-30)
+
+- ✅ Restauración de estado del Service Worker desde storage
+- ✅ Rotación del badge con alarma de 1 minuto (MV3)
+- ✅ Broadcast de tasas a todas las pestañas abiertas
+- ✅ Soporte de omnibox con keyword `tsl`
+
+### 0.4.2 (2026-03-29)
+
+- ✅ New Tab sin loading screen (verificación invisible)
+
+### 0.4.1 (2026-03-29)
+
+- ✅ New Tab opcional (redirige a Google si está desactivado)
+
+### 0.4.0 (2026-03-29)
+
+- ✅ Ticker Binance en popup
+- ✅ Toggle New Tab en Options
+
+### 0.3.0 (2026-03-29)
+
+- ✅ Popup con fuente seleccionable (ElToque o BCC)
+- ✅ Binance desde taso-api (no directa)
+
 ### 0.2.0 (2026-03-29)
 
-**Nuevas Funcionalidades:**
-- ✨ New Tab Page con dual panel (ElToque + BCC)
-- ✨ Ticker Binance en nueva pestaña
-- ✨ Buscador Google integrado
-- ✨ Year Progress Widget
-- ✨ Options Page completa
-- ✨ Theme toggle (Auto/Dark/Light)
-- ✨ Selección de monedas
-- ✨ Colores personalizables
-
-**Mejoras:**
-- 🎨 Diseño Liquid Glass consistente
-- ⚡ Plug & play (sin configuración)
-- 📱 Responsive en móvil
+- ✅ New Tab Dashboard con dual panel
+- ✅ Options page completa
 
 ### 0.1.0 (2026-03-28)
 
-**Initial Release:**
-- 🎉 Manifest V3 scaffold
-- 🎉 Service worker con auto-refresh
-- 🎉 Popup con Liquid Glass design
-- 🎉 Omnibox support
-- 🎉 Iconos personalizados
+- ✅ Initial scaffold con Manifest V3
 
-## 📄 License
+## 📄 Licencia
 
 MIT License - ver [LICENSE](LICENSE) para detalles.
 
-## 🙏 Credits
+## 🙏 Créditos
 
 - **Design:** Liquid Glass style from legacy BBAlert extension
 - **API:** taso-api (FastAPI backend)
-- **Icons:** Custom design from IMG_0973.png
+- **Icons:** Custom design
 - **Fonts:** Google Fonts (Space Grotesk, JetBrains Mono)
 
-## 📞 Support
+## 📞 Soporte
 
 - **GitHub:** https://github.com/TASALO-TEAM/taso-ext
 - **API Docs:** https://tasalo.duckdns.org/docs
 - **Issues:** https://github.com/TASALO-TEAM/taso-ext/issues
+- **Firefox:** https://github.com/TASALO-TEAM/taso-extmf
 
 ---
 
