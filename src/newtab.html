@@ -91,7 +91,7 @@ init();
       </div>
     </div>
 
-    <!-- Panel BCC (Derecha) -->
+    <!-- Panel BCC (Centro) -->
     <div class="panel" id="panelBcc">
       <div class="pnl-hdr">
         <div class="pnl-title">
@@ -113,19 +113,29 @@ init();
       </div>
     </div>
 
-  </div>
-
-  <!-- Buscador Google -->
-  <div id="searchZone">
-    <div id="searchWrap">
-      <input type="text" id="searchInput" placeholder="Buscar en Google..." autocomplete="off">
-      <button id="searchBtn" title="Buscar">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-      </button>
+    <!-- Panel Combustible (Derecha) -->
+    <div class="panel" id="panelFuel">
+      <div class="pnl-hdr">
+        <div class="pnl-title">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/>
+            <path d="M3 10h10"/>
+            <path d="M15 6l3 3v8.5a1.5 1.5 0 0 0 3 0V9l-3-3"/>
+          </svg>
+          Combustible
+        </div>
+        <div class="pnl-right">
+          <span class="pnl-upd" id="fuelUpd">--:--</span>
+          <span class="badge badge-fuel">CUP</span>
+        </div>
+      </div>
+      <div class="rgrid" id="fuelGrid">
+        <div class="skel" style="height:80px"></div>
+        <div class="skel" style="height:80px"></div>
+        <div class="skel" style="height:80px"></div>
+      </div>
     </div>
+
   </div>
 
   <!-- Year Progress Widget -->
@@ -173,11 +183,15 @@ init();
         <div class="ystat-l">Semanas restantes</div>
       </div>
     </div>
+    <div id="ywQuote" style="display:none">
+      <span id="ywQuoteIcon">💡</span>
+      <span id="ywQuoteText"></span>
+    </div>
   </div>
 
   <!-- Footer -->
   <div id="foot">
-    <span>TASALO v0.4.4</span>
+    <span>TASALO <span id="footVersion">—</span></span>
     <span class="fdot"></span>
     <span>Tasas del mercado Informal y Oficial cubano. <i>(Una extencion creada por ersus93)</i></span>
     <span class="fdot"></span>

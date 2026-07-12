@@ -179,8 +179,8 @@ body{
 #page{
   position:relative;z-index:1;
   flex:1;display:flex;flex-direction:column;align-items:center;
-  width:100%;max-width:1120px;margin:0 auto;
-  padding:24px 28px 36px;gap:36px;
+  width:100%;max-width:min(1500px, 94vw);margin:0 auto;
+  padding:24px clamp(16px,3vw,40px) 36px;gap:32px;
 }
 
 #hdr{
@@ -264,11 +264,19 @@ body{
    PANELS GRID
 ═══════════════════════════════════════════════ */
 #panels{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:16px;width:100%;
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:22px;width:100%;
 }
 
-@media(max-width:768px){
+@media(min-width:1600px){
+  #panels{gap:28px}
+}
+
+@media(max-width:1100px){
+  #panels{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:700px){
   #panels{grid-template-columns:1fr}
 }
 
@@ -341,13 +349,14 @@ body{
 }
 .badge-et{background:rgba(79,124,255,.15);color:var(--accent);border:1px solid rgba(79,124,255,.25)}
 .badge-bn{background:rgba(243,186,47,.12);color:var(--binance);border:1px solid rgba(243,186,47,.25)}
+.badge-fuel{background:rgba(74,222,128,.12);color:var(--dn);border:1px solid rgba(74,222,128,.25)}
 
 /* ═══════════════════════════════════════════════
    RATE CARDS GRID
 ═══════════════════════════════════════════════ */
 .rgrid{
   display:grid;grid-template-columns:repeat(3,1fr);
-  gap:8px;padding:10px;
+  gap:6px;padding:8px;
   min-height:120px;
 }
 
@@ -358,7 +367,7 @@ body{
   background:rgba(12,12,36,0.48);
   border:1px solid rgba(255,255,255,0.09);
   border-left:3px solid transparent;
-  border-radius:14px;padding:14px 15px 12px;
+  border-radius:14px;padding:10px 10px 9px;
   box-shadow:0 3px 14px rgba(0,0,0,0.22);
   transition:transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94), border-color 0.3s ease, box-shadow 0.3s ease;
   cursor:default;
@@ -402,10 +411,11 @@ body{
   font-family:var(--mono);font-weight:700;line-height:1.1;
   letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.rcard-val.sz4{font-size:20px}
-.rcard-val.sz5{font-size:17px}
-.rcard-val.sz6{font-size:14px}
-.rcard-val.sz7{font-size:12px}
+.rcard-val.sz4{font-size:17px}
+.rcard-val.sz5{font-size:15px}
+.rcard-val.sz6{font-size:12px}
+.rcard-val.sz7{font-size:10.5px}
+.rcard-val.sz8{font-size:9.5px}
 
 .rcard.up .rcard-val{color:var(--up)}
 .rcard.dn .rcard-val{color:var(--dn)}
@@ -441,91 +451,11 @@ body{
 /* ═══════════════════════════════════════════════
    SEARCH ZONE
 ═══════════════════════════════════════════════ */
-#searchZone{
-  width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;
-}
-
-#searchWrap{width:100%;max-width:600px;position:relative}
-
-#searchInput{
-  width:100%;padding:18px 60px 18px 28px;
-  border:1.5px solid rgba(255,255,255,0.12);
-  border-top-color:rgba(255,255,255,0.24);
-  border-radius:50px;color:var(--text);
-  font-family:system-ui,sans-serif;font-size:15px;
-  backdrop-filter:url(#lg) blur(22px) saturate(160%);
-  -webkit-backdrop-filter:url(#lg) blur(22px) saturate(160%);
-  background:rgba(12,12,36,0.52);
-  outline:none;
-  box-shadow:0 4px 20px rgba(0,0,0,0.22);
-  transition:border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-}
-
-:root.light #searchInput{
-  border-color:rgba(255,255,255,0.60);
-  border-top-color:rgba(255,255,255,0.95);
-  background:rgba(255,255,255,0.58);
-  box-shadow:0 4px 16px rgba(0,0,0,0.07);
-}
-
-#searchInput::placeholder{color:var(--text3)}
-
-#searchInput:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(79,124,255,0.18), 0 8px 32px rgba(59,110,224,0.22);
-  transform:scale(1.01);
-}
-
-:root.light #searchInput:focus{
-  box-shadow:0 0 0 3px rgba(59,110,224,0.18), 0 6px 24px rgba(59,110,224,0.14);
-}
-
-#searchBtn{
-  position:absolute;right:6px;top:50%;transform:translateY(-50%);
-  width:46px;height:46px;border-radius:50%;
-  background:linear-gradient(135deg, var(--accent) 0%, #3a6aff 100%);
-  border:none;color:#fff;
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background 0.3s ease,transform 0.2s ease,box-shadow 0.3s ease;
-  box-shadow:0 4px 20px rgba(79,124,255,0.45), inset 0 1px 0 rgba(255,255,255,0.2);
-}
-
-:root.light #searchBtn {
-  background: linear-gradient(135deg, #3b6ee0 0%, #4f7cff 100%);
-  box-shadow:0 4px 24px rgba(59,110,224,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
-}
-
-#searchBtn:hover{
-  background:#3a6de0;
-  box-shadow:0 8px 32px rgba(79,124,255,0.6), inset 0 1px 0 rgba(255,255,255,0.2);
-  transform:translateY(-50%) scale(1.1);
-}
-
-#searchBtn:active{transform:translateY(-50%) scale(0.95)}
-
-#hints{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-
-.hint{
-  font-size:10px;color:var(--text2);padding:5px 13px;
-  border:1px solid var(--border);border-radius:20px;
-  cursor:pointer;background:transparent;transition:all .2s ease;
-}
-
-:root.light .hint {
-  background: rgba(255,255,255,0.6);
-  border-color: rgba(59,110,224,0.15);
-}
-
-.hint:hover{
-  background:var(--bg3);color:var(--text);border-color:var(--accent);
-  box-shadow:0 2px 8px rgba(79,124,255,0.12);
-}
-
 /* ═══════════════════════════════════════════════
    YEAR PROGRESS WIDGET
 ═══════════════════════════════════════════════ */
 #yearWidget{
-  width:100%;max-width:600px;
+  width:100%;max-width:680px;
   position:relative;overflow:hidden;
   backdrop-filter:url(#lg) blur(22px) saturate(160%);
   -webkit-backdrop-filter:url(#lg) blur(22px) saturate(160%);
@@ -624,6 +554,14 @@ body{
 
 .ystat-l{font-size:10px;color:var(--text3);margin-top:3px;letter-spacing:.06em;text-transform:uppercase}
 
+#ywQuote{
+  display:flex;align-items:flex-start;gap:8px;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--text2);line-height:1.5;font-style:italic;
+}
+
+#ywQuoteIcon{flex-shrink:0;font-style:normal}
+
 /* ═══════════════════════════════════════════════
    FOOTER
 ═══════════════════════════════════════════════ */
@@ -631,6 +569,7 @@ body{
   display:flex;align-items:center;gap:12px;
   padding:12px 0 6px;font-size:10px;color:var(--text3);
   border-top:1px solid var(--border);width:100%;justify-content:center;
+  margin-top:auto;flex-wrap:wrap;text-align:center;
 }
 
 :root.light #foot {

@@ -43,12 +43,32 @@ export const CURRENCY_META = {
 // ═══════════════════════════════════════════════
 //  Default Settings
 // ═══════════════════════════════════════════════
+export const DEFAULT_TICKER_CURRENCIES = [
+  'BTC', 'ETH', 'BNB', 'XRP', 'ADA',
+  'DOGE', 'SOL', 'TRX', 'DOT', 'MATIC'
+];
+
+export const TICKER_CURRENCY_META = {
+  BTC:   { name: 'Bitcoin' },
+  ETH:   { name: 'Ethereum' },
+  BNB:   { name: 'BNB' },
+  XRP:   { name: 'XRP' },
+  ADA:   { name: 'Cardano' },
+  DOGE:  { name: 'Dogecoin' },
+  SOL:   { name: 'Solana' },
+  TRX:   { name: 'TRON' },
+  DOT:   { name: 'Polkadot' },
+  MATIC: { name: 'Polygon' },
+};
+
 export const DEFAULT_SETTINGS = {
   apiUrl:             DEFAULT_API_URL,
   updateInterval:     5,                // minutes
-  sourcePreference:   'eltoque',        // 'eltoque' | 'bcc'
+  sourcePreference:   'eltoque',        // 'eltoque' | 'bcc' | 'cadeca'
   showChangeType:     'color',
   scrollSpeed:        40,
+  tickerEnabled:      true,
+  tickerCurrencies:   [...DEFAULT_TICKER_CURRENCIES],
   fontSize:           13,
   showTimestamp:      true,
   showCurrencyFlag:   true,

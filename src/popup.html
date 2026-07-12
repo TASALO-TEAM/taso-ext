@@ -30,6 +30,10 @@
             <span class="source-icon">🟢</span>
             <span class="source-label">BCC</span>
           </button>
+          <button class="source-btn" data-source="cadeca" title="CADECA (Casas de Cambio)">
+            <span class="source-icon">🟡</span>
+            <span class="source-label">CDC</span>
+          </button>
         </div>
         <span class="update-dot" id="updateDot" title="Estado API"></span>
         <span class="update-info" id="updateInfo" title="Última actualización">—</span>
@@ -58,7 +62,7 @@
     <div class="rates-section" id="ratesSection">
       <div class="rates-loading" id="ratesLoading">
         <div class="spinner"></div>
-        <span>Obteniendo tasas...</span>
+        <span id="ratesLoadingText">Obteniendo tasas...</span>
       </div>
       <div class="rates-grid" id="ratesGrid" style="display:none"></div>
     </div>

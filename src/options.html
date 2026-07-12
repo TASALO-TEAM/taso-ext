@@ -30,6 +30,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           Visualización
         </a>
+        <a class="nav-item" data-section="ticker" href="#">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          Ticker
+        </a>
         <a class="nav-item" data-section="currencies" href="#">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           Monedas
@@ -96,6 +100,40 @@
               <button class="seg-btn" data-val="light">☀️ Claro</button>
             </div>
             <p class="hint">El tema automático sigue la preferencia de tu sistema operativo</p>
+          </div>
+
+          <div class="field-group">
+            <label class="label">Fuente de datos preferida</label>
+            <div class="btn-group" id="sourceGroup">
+              <button class="seg-btn active" data-val="eltoque">🔵 El Toque</button>
+              <button class="seg-btn" data-val="bcc">🟢 BCC</button>
+              <button class="seg-btn" data-val="cadeca">🟡 CADECA</button>
+            </div>
+            <p class="hint">Fuente que se muestra por defecto en el popup y en el ícono de la barra</p>
+          </div>
+
+          <div class="toggles">
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Nueva pestaña personalizada</span>
+                <span class="toggle-hint">Reemplaza la página de nueva pestaña con el dashboard de TASALO</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="newTabEnabled" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Búsqueda desde la barra de direcciones</span>
+                <span class="toggle-hint">Escribe <code style="font-family:var(--mono)">tsl</code> + Tab en la barra para buscar monedas</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="omniboxEnabled" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
           </div>
 
           <div class="toggles">
@@ -196,6 +234,51 @@
       <!-- ═══════════════════════════════════════════════
            SECCIÓN: MONEDAS
            ═══════════════════════════════════════════════ -->
+      <section class="section" id="section-ticker">
+        <div class="section-header">
+          <h2>Ticker de Binance</h2>
+          <p>Gestiona la cinta de criptomonedas del popup y el New Tab</p>
+        </div>
+
+        <div class="fields">
+          <div class="toggles">
+            <div class="toggle-row">
+              <div>
+                <span class="toggle-label">Mostrar ticker</span>
+                <span class="toggle-hint">Activa o desactiva por completo la cinta de precios de Binance</span>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="tickerEnabled" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="label">Velocidad de desplazamiento</label>
+            <div class="range-row">
+              <input type="range" id="scrollSpeed" min="10" max="80" step="5" class="range" value="40">
+              <span class="range-val" id="scrollSpeedVal">40</span>
+            </div>
+            <p class="hint">Qué tan rápido se desplaza la cinta (menor = más lento, mayor = más rápido)</p>
+          </div>
+
+          <div class="field-group">
+            <label class="label">Criptomonedas en el ticker</label>
+            <p class="hint" style="margin-bottom:12px">Selecciona cuáles monedas de Binance quieres ver desplazándose</p>
+
+            <div class="currencies-list" id="tickerCurrenciesList">
+              <div class="empty-currencies">Cargando...</div>
+            </div>
+
+            <div class="field-row" style="margin-top:12px">
+              <button class="btn-secondary" id="btnTickerSelectAll">Seleccionar todas</button>
+              <button class="btn-secondary" id="btnTickerSelectNone">Deseleccionar todas</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="section" id="section-currencies">
         <div class="section-header">
           <h2>Monedas</h2>
@@ -232,7 +315,7 @@
           <div class="about-logo">
             <span class="logo-mark-large">💱</span>
             <h1>TASALO</h1>
-            <p class="version">Versión 0.2.0</p>
+            <p class="version">Versión <span id="aboutVersion">—</span></p>
           </div>
 
           <div class="about-info">

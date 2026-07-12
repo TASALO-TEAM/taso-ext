@@ -124,13 +124,22 @@ async function fetchRates() {
 
     if (!data.ok || !data.data) throw new Error('Invalid API response structure');
 
-    // Extract rates from each source separately
+    // Extract rates from each source separately.
+    // FIX: CADECA no trae un campo "rate" en la API (solo buy/sell), así que
+    // necesita un parser propio; antes de este fix, parseSourceRates()
+    // descartaba silenciosamente TODAS las monedas de CADECA.
     const eltoqueRates = parseSourceRates(data.data.eltoque, 'eltoque');
     const bccRates = parseSourceRates(data.data.bcc, 'bcc');
-    const cadecaRates = parseSourceRates(data.data.cadeca, 'cadeca');
+    const cadecaRates = parseCadecaRates(data.data.cadeca);
     
-    // All rates combined (for backward compatibility)
-    const allRates = { ...eltoqueRates, ...bccRates, ...cadecaRates };
+    // All rates combined (para badge/omnibox/cálculo de cambios) — siempre
+    // valores numéricos planos; para CADECA se usa .rate (=sell, o buy si
+    // no hay sell) como valor de referencia.
+    const cadecaFlat = {};
+    for (const [cur, info] of Object.entries(cadecaRates)) {
+      cadecaFlat[cur] = info.rate;
+    }
+    const allRates = { ...eltoqueRates, ...bccRates, ...cadecaFlat };
     
     const binanceRates = extractBinanceRates(data.data.binance);
     const changes = calculateChanges(allRates, cachedRates);
@@ -158,6 +167,10 @@ async function fetchRates() {
 
     await updateBadge();
 
+    // Frase del año + tasas de combustible: no bloquean ni rompen el fetch
+    // principal si fallan (son datos complementarios, no críticos).
+    await Promise.allSettled([fetchYearState(), fetchFuelRates()]);
+
     broadcastToTabs({
       type: 'RATES_UPDATED',
       rates: allRates,
@@ -170,6 +183,44 @@ async function fetchRates() {
     log(`❌ Fetch error: ${error.message}`, 'ERROR');
     await browser.storage.local.set({ fetchError: error.message });
     setBadgeText('ERR', '#dc2626');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  Frase del año / progreso (GET /api/v1/year/state)
+// ═══════════════════════════════════════════════════
+async function fetchYearState() {
+  try {
+    const apiUrl = cachedSettings.apiUrl || DEFAULT_API_URL;
+    const response = await fetch(`${apiUrl}/api/v1/year/state`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data && data.ok) {
+      await browser.storage.local.set({ yearState: data, yearStateUpdated: new Date().toISOString() });
+    }
+  } catch (error) {
+    log(`Year state fetch error: ${error.message}`, 'WARN');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  Tasas de combustible (GET /api/v1/tasas/fuel)
+// ═══════════════════════════════════════════════════
+async function fetchFuelRates() {
+  try {
+    const apiUrl = cachedSettings.apiUrl || DEFAULT_API_URL;
+    const response = await fetch(`${apiUrl}/api/v1/tasas/fuel`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    if (data && data.rates) {
+      await browser.storage.local.set({ fuelRates: data, fuelRatesUpdated: new Date().toISOString() });
+    }
+  } catch (error) {
+    log(`Fuel rates fetch error: ${error.message}`, 'WARN');
   }
 }
 
@@ -197,6 +248,32 @@ function parseSourceRates(sourceData) {
       if (rate !== null) rates[key.toUpperCase()] = rate;
     }
   }
+  return rates;
+}
+
+// CADECA: la API devuelve {buy, sell, change, prev_rate} por moneda (SIN
+// campo "rate"), porque son precios de compra y venta reales, no una
+// tasa única. Se preservan ambos valores para mostrarlos fielmente.
+function parseCadecaRates(sourceData) {
+  const rates = {};
+  if (!sourceData || typeof sourceData !== 'object') return rates;
+
+  for (const [key, value] of Object.entries(sourceData)) {
+    if (!value || typeof value !== 'object') continue;
+
+    const buy  = typeof value.buy === 'number' ? value.buy : (value.buy != null ? parseFloat(value.buy) : null);
+    const sell = typeof value.sell === 'number' ? value.sell : (value.sell != null ? parseFloat(value.sell) : null);
+
+    if (buy === null && sell === null) continue;
+
+    rates[key.toUpperCase()] = {
+      buy,
+      sell,
+      rate: sell ?? buy,       // valor de referencia para badge/omnibox/combinado
+      change: value.change || 'neutral',
+    };
+  }
+
   return rates;
 }
 
@@ -238,8 +315,12 @@ function getSelectedSourceUSDRate() {
   if (source === 'bcc' && cachedBccRates && cachedBccRates['USD'] !== undefined) {
     return { rate: cachedBccRates['USD'], change: cachedChanges['USD'] };
   }
-  if (source === 'cadeca' && cachedCadecaRates && cachedCadecaRates['USD'] !== undefined) {
-    return { rate: cachedCadecaRates['USD'], change: cachedChanges['USD'] };
+  if (source === 'cadeca' && cachedCadecaRates && cachedCadecaRates['USD']) {
+    const cd = cachedCadecaRates['USD'];
+    const rate = typeof cd === 'object' ? (cd.sell ?? cd.buy ?? cd.rate) : cd;
+    if (rate !== undefined && rate !== null) {
+      return { rate, change: cachedChanges['USD'] };
+    }
   }
   
   // Fallback to combined rates
@@ -366,12 +447,22 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 //  Omnibox
 // ═══════════════════════════════════════════════
 browser.omnibox.onInputStarted.addListener(() => {
+  if (cachedSettings.omniboxEnabled === false) {
+    browser.omnibox.setDefaultSuggestion({
+      description: 'TASALO — búsqueda desde la barra desactivada (actívala en Opciones)'
+    });
+    return;
+  }
   browser.omnibox.setDefaultSuggestion({
     description: 'TASALO — escribe una moneda (USD, EUR, BTC...) o Enter para ver todo'
   });
 });
 
 browser.omnibox.onInputChanged.addListener((text, suggest) => {
+  if (cachedSettings.omniboxEnabled === false) {
+    suggest([]);
+    return;
+  }
   const query = text.trim().toUpperCase();
   const currencies = getOrderedCurrencies();
   const suggestions = [];
@@ -428,4 +519,4 @@ function broadcastToTabs(message) {
   }).catch(() => {});
 }
 
-log('Service worker loaded (v0.4.3)', 'INIT');
+log(`Service worker loaded (v${browser.runtime.getManifest().version})`, 'INIT');

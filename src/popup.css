@@ -206,30 +206,30 @@ body::before {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-/* Source Switch - Quick toggle between ElToque and BCC */
+/* Source Switch - Quick toggle between ElToque, BCC y CADECA */
 .source-switch {
   display: flex;
   background: var(--bg-glass);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 3px;
-  gap: 3px;
+  gap: 2px;
 }
 
 .source-btn {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
+  gap: 4px;
+  padding: 5px 7px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--text3);
   font-family: var(--ui);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;

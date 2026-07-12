@@ -3,7 +3,7 @@
 //  Liquid Glass con dos paneles (ElToque + BCC)
 // ═══════════════════════════════════════════════
 
-import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, browser } from './constants.js';
+import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, DEFAULT_TICKER_CURRENCIES, browser } from './constants.js';
 
 // Estado global
 let currentRates = {};
@@ -18,15 +18,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
   setupTheme();
   setupClock();
-  setupSearch();
-  setupYearProgress();
+  await setupYearProgress();
+  setFooterVersion();
   await loadRates();
   setupRefresh();
   
   // Escuchar cambios en storage
   browser.storage.onChanged.addListener((changes) => {
-    if (changes.currentRates || changes.rateChanges) {
+    if (changes.currentRates || changes.rateChanges || changes.fuelRates) {
       loadRates();
+    }
+    if (changes.yearState) {
+      setupYearProgress();
+    }
+    if (changes.settings) {
+      settings = changes.settings.newValue || {};
+      renderBinanceTicker();
     }
   });
 });
@@ -34,6 +41,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadSettings() {
   const data = await browser.storage.local.get('settings');
   settings = data.settings || {};
+}
+
+function setFooterVersion() {
+  const el = document.getElementById('footVersion');
+  if (!el) return;
+  try {
+    el.textContent = 'v' + browser.runtime.getManifest().version;
+  } catch {
+    el.textContent = '';
+  }
 }
 
 function setupTheme() {
@@ -56,7 +73,6 @@ function setupTheme() {
 
 function applyTheme(theme) {
   if (theme === 'dark') {
-    document.documentElement.classList.add('light');
     document.documentElement.classList.remove('light');
   } else if (theme === 'light') {
     document.documentElement.classList.add('light');
@@ -105,55 +121,45 @@ function updateClock() {
 // ═══════════════════════════════════════════════
 //  Search
 // ═══════════════════════════════════════════════
-function setupSearch() {
-  const input = document.getElementById('searchInput');
-  const btn = document.getElementById('searchBtn');
-  const hints = document.querySelectorAll('.hint');
-  
-  function search(query) {
-    if (!query) return;
-    const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-    window.location.href = url;
-  }
-  
-  if (input) {
-    input.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        search(input.value);
-      }
-    });
-  }
-  
-  if (btn) {
-    btn.addEventListener('click', () => {
-      if (input) search(input.value);
-    });
-  }
-  
-  hints.forEach(hint => {
-    hint.addEventListener('click', () => {
-      search(hint.dataset.query);
-    });
-  });
-}
-
 // ═══════════════════════════════════════════════
 //  Year Progress
 // ═══════════════════════════════════════════════
-function setupYearProgress() {
+// ═══════════════════════════════════════════════════
+//  Year Progress + Frase del día (M1: usa GET /api/v1/year/state
+//  cacheado por background.js; si no hay datos o falla, cae al
+//  cálculo local que ya existía, sin frase).
+// ═══════════════════════════════════════════════════
+async function setupYearProgress() {
   const now = new Date();
   const year = now.getFullYear();
-  
-  const start = new Date(year, 0, 1);
-  const end = new Date(year + 1, 0, 1);
-  const total = end - start;
-  const elapsed = now - start;
-  const progress = (elapsed / total) * 100;
-  
-  const daysPassed = Math.floor(elapsed / (1000 * 60 * 60 * 24));
-  const daysRemaining = 365 - daysPassed;
+
+  // Días transcurridos: siempre se calcula localmente (es determinista,
+  // no depende de la API). percent y daysRemaining sí vienen de la API
+  // cuando está disponible, para que coincidan exactamente con /y del bot.
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year + 1, 0, 1);
+  const totalMs = yearEnd - yearStart;
+  const elapsedMs = now - yearStart;
+  const daysPassed = Math.floor(elapsedMs / (1000 * 60 * 60 * 24));
+
+  let percent = (elapsedMs / totalMs) * 100;
+  let daysRemaining = 365 - daysPassed;
+  let quoteText = null;
+
+  try {
+    const data = await browser.storage.local.get('yearState');
+    const state = data.yearState;
+    if (state && state.ok && state.progress) {
+      if (typeof state.progress.percent === 'number') percent = state.progress.percent;
+      if (typeof state.progress.days_left === 'number') daysRemaining = state.progress.days_left;
+      if (state.quote && state.quote.quote) quoteText = state.quote.quote;
+    }
+  } catch {
+    // sin storage disponible — nos quedamos con el cálculo local
+  }
+
   const weeksLeft = Math.ceil(daysRemaining / 7);
-  
+
   // Update UI
   const progressEl = document.getElementById('yearProgress');
   const pctEl = document.getElementById('ywPct');
@@ -161,25 +167,24 @@ function setupYearProgress() {
   const daysRemainingEl = document.getElementById('daysRemaining');
   const weeksLeftEl = document.getElementById('weeksLeft');
   const mticks = document.querySelectorAll('.mtick');
-  
+
   if (progressEl) {
     setTimeout(() => {
-      progressEl.style.width = `${progress.toFixed(1)}%`;
+      progressEl.style.width = `${percent.toFixed(1)}%`;
     }, 100);
   }
-  
+
   if (pctEl) {
-    pctEl.innerHTML = `${progress.toFixed(1)}% <small>completado</small>`;
+    pctEl.innerHTML = `${percent.toFixed(1)}% <small>completado</small>`;
   }
-  
+
   if (daysPassedEl) daysPassedEl.textContent = daysPassed;
   if (daysRemainingEl) daysRemainingEl.textContent = daysRemaining;
   if (weeksLeftEl) weeksLeftEl.textContent = weeksLeft;
-  
+
   // Highlight current month
   const currentMonth = now.getMonth();
-  const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  
+
   mticks.forEach((tick, index) => {
     tick.classList.remove('past', 'now');
     if (index < currentMonth) {
@@ -188,6 +193,18 @@ function setupYearProgress() {
       tick.classList.add('now');
     }
   });
+
+  // Frase del día
+  const quoteBlock = document.getElementById('ywQuote');
+  const quoteTextEl = document.getElementById('ywQuoteText');
+  if (quoteBlock && quoteTextEl) {
+    if (quoteText) {
+      quoteTextEl.textContent = quoteText;
+      quoteBlock.style.display = 'flex';
+    } else {
+      quoteBlock.style.display = 'none';
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -202,7 +219,8 @@ async function loadRates() {
       'lastUpdated',
       'eltoqueRates',
       'bccRates',
-      'cadecaRates'
+      'cadecaRates',
+      'fuelRates'
     ]);
 
     // Use source-specific rates for each panel
@@ -216,6 +234,7 @@ async function loadRates() {
 
     renderElToquePanel(eltoqueRates);
     renderBccPanel(bccRates);
+    renderFuelPanel(data.fuelRates || null);
     renderBinanceTicker();
 
   } catch (error) {
@@ -283,6 +302,86 @@ function renderBccPanel(bccRates) {
   }
 }
 
+// M2: Combustible (GET /api/v1/tasas/fuel, cacheado por background.js)
+const FUEL_META = {
+  'B-94':     { name: 'Gasolina B-94', flag: '⛽', short: 'B94' },
+  'B-90':     { name: 'Gasolina B-90', flag: '⛽', short: 'B90' },
+  'B-83':     { name: 'Gasolina B-83', flag: '⛽', short: 'B83' },
+  'Petroleo': { name: 'Petróleo/Diésel', flag: '🛢️', short: 'GO' },
+  'Gas_LP':   { name: 'Gas Licuado (LP)', flag: '🔥', short: 'GLP' },
+};
+const FUEL_ORDER = ['B-94', 'B-90', 'B-83', 'Petroleo', 'Gas_LP'];
+
+function renderFuelPanel(fuelData) {
+  const grid = document.getElementById('fuelGrid');
+  if (!grid) return;
+
+  const rates = (fuelData && fuelData.rates) || {};
+  grid.innerHTML = '';
+
+  for (const key of FUEL_ORDER) {
+    const item = rates[key];
+    if (!item) continue;
+
+    const buy = typeof item.buy === 'number' ? item.buy : null;
+    const sell = typeof item.sell === 'number' ? item.sell : null;
+    if (buy === null && sell === null) continue;
+
+    const meta = FUEL_META[key] || { name: key, flag: '⛽', short: key };
+    const change = item.change || 'neutral';
+    const unit = item.unit || 'CUP/L';
+
+    const card = createFuelCard(meta.short, buy, sell, change, meta, unit);
+    grid.appendChild(card);
+  }
+
+  if (!grid.children.length) {
+    grid.innerHTML = '<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>';
+  }
+
+  const updEl = document.getElementById('fuelUpd');
+  if (updEl) {
+    updEl.textContent = new Date().toLocaleTimeString('es-CU', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+}
+
+// El combustible se cotiza como un RANGO de precios (mínimo-máximo
+// observado en el mercado informal), no como una tasa única. Se muestra
+// tal cual para ser fiel a la realidad.
+function createFuelCard(label, buy, sell, change, meta, unit) {
+  const card = document.createElement('div');
+  card.className = `rcard ${change}`;
+
+  const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
+
+  let valueText;
+  if (buy != null && sell != null && buy !== sell) {
+    valueText = `${formatRate(buy)}–${formatRate(sell)}`;
+  } else {
+    valueText = formatRate(sell ?? buy);
+  }
+
+  const sizeClass = getSizeClassForLength(valueText.length);
+
+  card.innerHTML = `
+    <div class="rcard-top">
+      <span class="rcard-sym">${label}</span>
+      <span class="rcard-ico">${meta.flag}</span>
+    </div>
+    <div class="rcard-val ${sizeClass}">${valueText}</div>
+    <div class="rcard-unit">${unit}</div>
+    <div class="rcard-bot">
+      <span class="rcard-name">${meta.name}</span>
+      <span class="rcard-pct">${arrow}</span>
+    </div>
+  `;
+
+  return card;
+}
+
 function createRateCard(currency, rate, change, meta, unit) {
   const card = document.createElement('div');
   card.className = `rcard ${change}`;
@@ -308,7 +407,12 @@ function createRateCard(currency, rate, change, meta, unit) {
 
 function getRateSizeClass(rate) {
   const len = formatRate(rate).length;
-  if (len >= 7) return 'sz7';
+  return getSizeClassForLength(len);
+}
+
+function getSizeClassForLength(len) {
+  if (len >= 10) return 'sz8';
+  if (len >= 8) return 'sz7';
   if (len >= 6) return 'sz6';
   if (len >= 5) return 'sz5';
   return 'sz4';
@@ -324,9 +428,18 @@ function formatRate(rate) {
 
 function renderBinanceTicker() {
   const strip = document.getElementById('tickerStrip');
+  const zone = document.getElementById('tickerZone');
   if (!strip) return;
-  
-  const currencies = Object.keys(binanceRates);
+
+  // Toggle general del ticker (gestión desde Opciones > Ticker)
+  if (settings.tickerEnabled === false) {
+    if (zone) zone.style.display = 'none';
+    return;
+  }
+  if (zone) zone.style.display = '';
+
+  const selected = settings.tickerCurrencies?.length ? settings.tickerCurrencies : DEFAULT_TICKER_CURRENCIES;
+  const currencies = selected.filter(cur => binanceRates[cur] !== undefined);
   if (currencies.length === 0) return;
   
   const itemsHtml = currencies.map(cur => {
@@ -347,9 +460,12 @@ function renderBinanceTicker() {
   // Duplicate for seamless loop
   strip.innerHTML = itemsHtml + itemsHtml;
   
-  // Calculate animation duration based on content length
-  const totalChars = currencies.length * 20; // Approx chars per item
-  const duration = Math.max(20, totalChars * 0.5);
+  // Calculate animation duration, escalado por settings.scrollSpeed
+  // (40 = velocidad base/default; mayor valor = ticker más rápido)
+  const speed = settings.scrollSpeed || 40;
+  const totalChars = currencies.length * 20;
+  const baseDuration = Math.max(20, totalChars * 0.5);
+  const duration = Math.max(8, baseDuration * (40 / speed));
   strip.style.animationDuration = `${duration}s`;
   document.documentElement.style.setProperty('--td', `${duration}s`);
 }
