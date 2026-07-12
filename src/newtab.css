@@ -575,8 +575,7 @@ body{
 :root.light #foot {
   border-top-color: rgba(59,110,224,0.1);
   background: rgba(255,255,255,0.3);
-  padding: 14px 0 8px;
-  margin-top: 8px;
+  padding: 14px 8px 8px;
   border-radius: 8px;
 }
 

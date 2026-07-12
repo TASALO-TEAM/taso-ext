@@ -411,10 +411,9 @@ function getRateSizeClass(rate) {
 }
 
 function getSizeClassForLength(len) {
-  if (len >= 10) return 'sz8';
-  if (len >= 8) return 'sz7';
-  if (len >= 6) return 'sz6';
-  if (len >= 5) return 'sz5';
+  if (len >= 13) return 'sz7';
+  if (len >= 11) return 'sz6';
+  if (len >= 9) return 'sz5';
   return 'sz4';
 }
 
