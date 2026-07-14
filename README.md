@@ -2,7 +2,7 @@
 
 > Tasas de cambio del dólar en Cuba en tu navegador — Diseño Liquid Glass
 
-[![Version](https://img.shields.io/badge/version-0.4.5-blue.svg)](https://github.com/TASALO-TEAM/taso-ext)
+[![Version](https://img.shields.io/badge/version-0.5.1-blue.svg)](https://github.com/TASALO-TEAM/taso-ext)
 [![Manifest](https://img.shields.io/badge/manifest-v3-green.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
