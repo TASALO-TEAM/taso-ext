@@ -3,7 +3,7 @@
 //  Liquid Glass con dos paneles (ElToque + BCC)
 // ═══════════════════════════════════════════════
 
-import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, DEFAULT_TICKER_CURRENCIES, browser } from './constants.js';
+import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, DEFAULT_TICKER_CURRENCIES, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
 
 // Estado global
 let currentRates = {};
@@ -261,6 +261,7 @@ function renderElToquePanel(eltoqueRates) {
     const card = createRateCard(currency, rate, change, meta, 'CUP');
     grid.appendChild(card);
   }
+  attachFlagFallbacks(grid);
 
   // Update timestamp
   const updEl = document.getElementById('eltoqueUpd');
@@ -291,6 +292,7 @@ function renderBccPanel(bccRates) {
     const card = createRateCard(currency, rate, change, meta, 'CUP');
     grid.appendChild(card);
   }
+  attachFlagFallbacks(grid);
 
   // Update timestamp
   const updEl = document.getElementById('bccUpd');
@@ -338,6 +340,7 @@ function renderFuelPanel(fuelData) {
   if (!grid.children.length) {
     grid.innerHTML = '<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>';
   }
+  attachFlagFallbacks(grid);
 
   const updEl = document.getElementById('fuelUpd');
   if (updEl) {
@@ -369,7 +372,7 @@ function createFuelCard(label, buy, sell, change, meta, unit) {
   card.innerHTML = `
     <div class="rcard-top">
       <span class="rcard-sym">${label}</span>
-      <span class="rcard-ico">${meta.flag}</span>
+      <span class="rcard-ico">${flagImgHtml(meta.flag, 15)}</span>
     </div>
     <div class="rcard-val ${sizeClass}">${valueText}</div>
     <div class="rcard-unit">${unit}</div>
@@ -392,7 +395,7 @@ function createRateCard(currency, rate, change, meta, unit) {
   card.innerHTML = `
     <div class="rcard-top">
       <span class="rcard-sym">${currency}</span>
-      <span class="rcard-ico">${meta.flag}</span>
+      <span class="rcard-ico">${flagImgHtml(meta.flag, 15)}</span>
     </div>
     <div class="rcard-val ${sizeClass}">${formatRate(rate)}</div>
     <div class="rcard-unit">${unit}</div>

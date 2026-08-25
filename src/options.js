@@ -3,7 +3,7 @@
 //  Configuración simple y plug & play
 // ═══════════════════════════════════════════════
 
-import { DEFAULT_SETTINGS, CURRENCY_META, PREFERRED_ORDER, DEFAULT_TICKER_CURRENCIES, TICKER_CURRENCY_META, browser } from './constants.js';
+import { DEFAULT_SETTINGS, CURRENCY_META, PREFERRED_ORDER, DEFAULT_TICKER_CURRENCIES, TICKER_CURRENCY_META, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
 
 let settings = {};
 let availableCurrencies = [];
@@ -189,7 +189,7 @@ async function renderCurrenciesList() {
     return `
       <div class="currency-item ${isSelected ? 'selected' : ''}" data-currency="${currency}">
         <div class="currency-left">
-          <span class="currency-flag">${meta.flag}</span>
+          <span class="currency-flag">${flagImgHtml(meta.flag, 16)}</span>
           <div>
             <div class="currency-code">${currency}</div>
             <div class="currency-name">${meta.name}</div>
@@ -199,6 +199,7 @@ async function renderCurrenciesList() {
       </div>
     `;
   }).join('');
+  attachFlagFallbacks(container);
   
   // Add click listeners
   container.querySelectorAll('.currency-item').forEach(item => {

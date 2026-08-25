@@ -3,7 +3,7 @@
 //  Muestra SOLO ElToque O BCC según configuración
 // ═══════════════════════════════════════════════
 
-import { PREFERRED_ORDER, CURRENCY_META, DEFAULT_TICKER_CURRENCIES, browser } from './constants.js';
+import { PREFERRED_ORDER, CURRENCY_META, DEFAULT_TICKER_CURRENCIES, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
 
 let settings = {};
 let currentRates = {};
@@ -268,7 +268,7 @@ function renderGrid() {
     card.innerHTML = `
       <div class="rate-top">
         <span class="rate-cur">${cur}</span>
-        ${showFlags ? `<span class="rate-flag">${meta.flag}</span>` : ''}
+        ${showFlags ? `<span class="rate-flag">${flagImgHtml(meta.flag)}</span>` : ''}
       </div>
       <div class="rate-val" style="font-size:${valFontSize}px">${valueHtml}</div>
       <div class="rate-bot">
@@ -278,9 +278,10 @@ function renderGrid() {
     `;
     grid.appendChild(card);
   }
+  attachFlagFallbacks(grid);
 }
 
-// ── Ticker de Binance ────────────────────────────────────
+// ── Ticker de Binance ────────────────────────
 function renderTicker() {
   const strip = document.getElementById('tickerStrip');
   const section = document.getElementById('tickerSection');
