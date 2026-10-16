@@ -25,6 +25,7 @@ let cachedBinanceRates = {};
 let cachedEltoqueRates = {};
 let cachedBccRates = {};
 let cachedCadecaRates = {};
+let cachedQvapayRates = {};
 let cachedSettings = deepClone(DEFAULT_SETTINGS);
 
 // ═══════════════════════════════════════════════
@@ -35,7 +36,7 @@ let cachedSettings = deepClone(DEFAULT_SETTINGS);
 async function loadStateFromStorage() {
   const stored = await browser.storage.local.get([
     'settings', 'currentRates', 'rateChanges', 'binanceRates',
-    'eltoqueRates', 'bccRates', 'cadecaRates'
+    'eltoqueRates', 'bccRates', 'cadecaRates', 'qvapayRates'
   ]);
   if (stored.settings)      cachedSettings     = { ...deepClone(DEFAULT_SETTINGS), ...stored.settings };
   if (stored.currentRates)  cachedRates        = stored.currentRates;
@@ -44,6 +45,7 @@ async function loadStateFromStorage() {
   if (stored.eltoqueRates)  cachedEltoqueRates = stored.eltoqueRates;
   if (stored.bccRates)      cachedBccRates     = stored.bccRates;
   if (stored.cadecaRates)   cachedCadecaRates  = stored.cadecaRates;
+  if (stored.qvapayRates)   cachedQvapayRates  = stored.qvapayRates;
 }
 
 // ═══════════════════════════════════════════════
@@ -60,6 +62,7 @@ browser.runtime.onInstalled.addListener(async () => {
   }
 
   await setupAlarms();
+  await cleanupLegacyStorage();
   await fetchRates();
 });
 
@@ -67,8 +70,18 @@ browser.runtime.onStartup.addListener(async () => {
   log('Browser started', 'INIT');
   await loadStateFromStorage(); // ✅ FIX: Restaurar estado al arrancar
   await setupAlarms();
+  await cleanupLegacyStorage();
   await fetchRates();
 });
+
+// Claves de versiones anteriores (panel Combustible, reemplazado por QvaPay).
+async function cleanupLegacyStorage() {
+  try {
+    await browser.storage.local.remove(['fuelRates', 'fuelRatesUpdated']);
+  } catch (error) {
+    log(`Legacy storage cleanup error: ${error.message}`, 'WARN');
+  }
+}
 
 // ═══════════════════════════════════════════════
 //  Alarms
@@ -131,6 +144,9 @@ async function fetchRates() {
     const eltoqueRates = parseSourceRates(data.data.eltoque, 'eltoque');
     const bccRates = parseSourceRates(data.data.bcc, 'bcc');
     const cadecaRates = parseCadecaRates(data.data.cadeca);
+    // QvaPay: métodos de pago P2P (no monedas). Se guarda aparte y NO entra en
+    // allRates, porque "CUP"/"MLC" existen también como moneda y chocarían.
+    const qvapayRates = parseQvapayRates(data.data.qvapay);
     
     // All rates combined (para badge/omnibox/cálculo de cambios) — siempre
     // valores numéricos planos; para CADECA se usa .rate (=sell, o buy si
@@ -150,6 +166,7 @@ async function fetchRates() {
     cachedEltoqueRates = eltoqueRates;
     cachedBccRates     = bccRates;
     cachedCadecaRates  = cadecaRates;
+    cachedQvapayRates  = qvapayRates;
 
     const now = new Date().toISOString();
     await browser.storage.local.set({
@@ -157,19 +174,20 @@ async function fetchRates() {
       eltoqueRates:  eltoqueRates,
       bccRates:      bccRates,
       cadecaRates:   cadecaRates,
+      qvapayRates:   qvapayRates,
       rateChanges:   changes,
       binanceRates:  binanceRates,
       lastUpdated:   now,
       fetchError:    null,
     });
 
-    log(`✅ Fetched: ElToque=${Object.keys(eltoqueRates).length}, BCC=${Object.keys(bccRates).length}, CADECA=${Object.keys(cadecaRates).length}, Binance=${Object.keys(binanceRates).length}`, 'SUCCESS');
+    log(`✅ Fetched: ElToque=${Object.keys(eltoqueRates).length}, BCC=${Object.keys(bccRates).length}, CADECA=${Object.keys(cadecaRates).length}, QvaPay=${Object.keys(qvapayRates).length}, Binance=${Object.keys(binanceRates).length}`, 'SUCCESS');
 
     await updateBadge();
 
-    // Frase del año + tasas de combustible: no bloquean ni rompen el fetch
-    // principal si fallan (son datos complementarios, no críticos).
-    await Promise.allSettled([fetchYearState(), fetchFuelRates()]);
+    // Frase del año: no bloquea ni rompe el fetch principal si falla
+    // (dato complementario, no crítico).
+    await Promise.allSettled([fetchYearState()]);
 
     broadcastToTabs({
       type: 'RATES_UPDATED',
@@ -206,22 +224,39 @@ async function fetchYearState() {
 }
 
 // ═══════════════════════════════════════════════════
-//  Tasas de combustible (GET /api/v1/tasas/fuel)
+//  QvaPay P2P (viene en GET /api/v1/tasas/latest → data.qvapay)
+//  Cada clave es un MÉTODO DE PAGO (CUP, MLC, TROPIPAY, ETECSA, ZELLE...),
+//  no una moneda, y el valor es "cuánto de ese método por 1 USD".
+//  La API da {rate (promedio), buy, sell, change, prev_rate}.
 // ═══════════════════════════════════════════════════
-async function fetchFuelRates() {
-  try {
-    const apiUrl = cachedSettings.apiUrl || DEFAULT_API_URL;
-    const response = await fetch(`${apiUrl}/api/v1/tasas/fuel`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    if (data && data.rates) {
-      await browser.storage.local.set({ fuelRates: data, fuelRatesUpdated: new Date().toISOString() });
-    }
-  } catch (error) {
-    log(`Fuel rates fetch error: ${error.message}`, 'WARN');
+function parseQvapayRates(sourceData) {
+  const rates = {};
+  if (!sourceData || typeof sourceData !== 'object') return rates;
+
+  const num = (v) => {
+    const n = typeof v === 'number' ? v : (v != null ? parseFloat(String(v).replace(',', '.')) : NaN);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  };
+
+  for (const [key, value] of Object.entries(sourceData)) {
+    if (!value || typeof value !== 'object') continue;
+
+    const buy  = num(value.buy);
+    const sell = num(value.sell);
+    const avg  = buy !== null && sell !== null ? (buy + sell) / 2 : (buy ?? sell);
+    const rate = num(value.rate) ?? avg;
+
+    if (rate === null) continue; // sin ningún dato: no se muestra (no se interpola)
+
+    rates[key.toUpperCase()] = {
+      rate,
+      buy,
+      sell,
+      change: value.change || 'neutral',
+    };
   }
+
+  return rates;
 }
 
 function extractBinanceRates(binanceData) {

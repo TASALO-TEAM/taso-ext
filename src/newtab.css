@@ -225,7 +225,8 @@ body{
 }
 .badge-et{background:rgba(108,129,255,.12);color:var(--accent);border:1px solid rgba(108,129,255,.22)}
 .badge-bn{background:rgba(232,171,47,.10);color:var(--binance);border:1px solid rgba(232,171,47,.22)}
-.badge-fuel{background:rgba(52,211,153,.10);color:var(--dn);border:1px solid rgba(52,211,153,.22)}
+/* QvaPay: badge neutro (Quiet Glass = un solo acento, sin color de marca nuevo) */
+.badge-qv{background:var(--bg3);color:var(--text2);border:1px solid var(--border);white-space:nowrap}
 
 /* ═══════════════════════════════════════════════
    RATE CARDS GRID
@@ -243,8 +244,8 @@ body{
 }
 
 .rcard.up{border-left-color:var(--up)}
-.rcard.dn{border-left-color:var(--dn)}
-.rcard.neu{border-left-color:var(--text3)}
+.rcard.dn,.rcard.down{border-left-color:var(--dn)}
+.rcard.neu,.rcard.neutral{border-left-color:var(--text3)}
 
 .rcard:hover{
   transform:translateY(-2px);
@@ -289,10 +290,15 @@ body{
 .rcard-val.sz8{font-size:9.5px}
 
 .rcard.up .rcard-val{color:var(--up)}
-.rcard.dn .rcard-val{color:var(--dn)}
-.rcard.neu .rcard-val{color:var(--text)}
+.rcard.dn .rcard-val,.rcard.down .rcard-val{color:var(--dn)}
+.rcard.neu .rcard-val,.rcard.neutral .rcard-val{color:var(--text)}
 
 .rcard-unit{font-size:8px;color:var(--text3);margin-top:2px;letter-spacing:.03em}
+/* Compra · venta (QvaPay): una sola linea, sin partirse */
+.rcard-bs{display:flex;flex-wrap:wrap;column-gap:8px;font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:3px}
+.rcard-bs span{white-space:nowrap}
+/* Panel sin datos de la fuente */
+.pnl-empty{grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:100px;padding:12px;font-size:11px;color:var(--text3);text-align:center}
 
 .rcard-bot{
   display:flex;align-items:center;justify-content:space-between;
@@ -302,8 +308,8 @@ body{
 .rcard-pct{font-family:var(--mono);font-size:9px;font-weight:600;flex-shrink:0}
 
 .rcard.up .rcard-pct{color:var(--up)}
-.rcard.dn .rcard-pct{color:var(--dn)}
-.rcard.neu .rcard-pct{color:var(--text3)}
+.rcard.dn .rcard-pct,.rcard.down .rcard-pct{color:var(--dn)}
+.rcard.neu .rcard-pct,.rcard.neutral .rcard-pct{color:var(--text3)}
 
 /* ═══════════════════════════════════════════════
    SKELETON LOADER
@@ -412,3 +418,9 @@ body{
 #foot a:hover{color:var(--accent)}
 
 .fdot{width:3px;height:3px;background:var(--text3);border-radius:50%}
+
+/* Accesibilidad: sin brillos ni shimmer si el sistema pide menos movimiento */
+@media (prefers-reduced-motion: reduce){
+  .rcard:hover::after{animation:none;opacity:0}
+  .skel{animation:none}
+}

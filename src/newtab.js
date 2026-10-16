@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════
 //  TASALO — New Tab Page v1
-//  Liquid Glass con dos paneles (ElToque + BCC)
+//  Liquid Glass con tres paneles (ElToque + BCC + QvaPay)
 // ═══════════════════════════════════════════════
 
 import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, DEFAULT_TICKER_CURRENCIES, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Escuchar cambios en storage
   browser.storage.onChanged.addListener((changes) => {
-    if (changes.currentRates || changes.rateChanges || changes.fuelRates) {
+    if (changes.currentRates || changes.rateChanges || changes.eltoqueRates || changes.bccRates || changes.qvapayRates) {
       loadRates();
     }
     if (changes.yearState) {
@@ -220,7 +220,7 @@ async function loadRates() {
       'eltoqueRates',
       'bccRates',
       'cadecaRates',
-      'fuelRates'
+      'qvapayRates'
     ]);
 
     // Use source-specific rates for each panel
@@ -228,13 +228,9 @@ async function loadRates() {
     rateChanges = data.rateChanges || {};
     binanceRates = data.binanceRates || {};
 
-    // Store source-specific rates
-    const eltoqueRates = data.eltoqueRates || {};
-    const bccRates = data.bccRates || {};
-
-    renderElToquePanel(eltoqueRates);
-    renderBccPanel(bccRates);
-    renderFuelPanel(data.fuelRates || null);
+    renderElToquePanel(data.eltoqueRates || {});
+    renderBccPanel(data.bccRates || {});
+    renderQvapayPanel(data.qvapayRates || {});
     renderBinanceTicker();
 
   } catch (error) {
@@ -242,143 +238,158 @@ async function loadRates() {
   }
 }
 
-function renderElToquePanel(eltoqueRates) {
-  const grid = document.getElementById('eltoqueGrid');
-  if (!grid) return;
+// Orden de códigos: primero los conocidos según `order` y después el resto
+// (monedas o métodos nuevos que añada la API) por orden alfabético, para que
+// todo lo que traiga la fuente se muestre aunque la extensión no lo conozca.
+function sortCodes(codes, order) {
+  return [...codes].sort((a, b) => {
+    const ia = order.indexOf(a);
+    const ib = order.indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+}
 
-  // ElToque currencies (informal market)
-  const eltoqueCurrencies = ['EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT'];
-
-  grid.innerHTML = '';
-
-  for (const currency of eltoqueCurrencies) {
-    const rate = eltoqueRates[currency];
-    if (rate === undefined) continue;
-
-    const change = rateChanges[currency] || 'neutral';
-    const meta = CURRENCY_META[currency] || { name: currency, flag: '💱' };
-
-    const card = createRateCard(currency, rate, change, meta, 'CUP');
-    grid.appendChild(card);
-  }
-  attachFlagFallbacks(grid);
-
-  // Update timestamp
-  const updEl = document.getElementById('eltoqueUpd');
+function setPanelTime(id) {
+  const updEl = document.getElementById(id);
   if (updEl) {
     updEl.textContent = new Date().toLocaleTimeString('es-CU', {
       hour: '2-digit',
       minute: '2-digit'
     });
   }
+}
+
+function showPanelEmpty(grid, text) {
+  grid.innerHTML = '';
+  const msg = document.createElement('div');
+  msg.className = 'pnl-empty';
+  msg.textContent = text;
+  grid.appendChild(msg);
+}
+
+// Panel de una fuente con una tasa por moneda (ElToque, BCC): muestra TODAS
+// las monedas que traiga la fuente. "CUP" es la moneda base, no una tarjeta.
+function renderCurrencyPanel(gridId, updId, sourceRates, emptyText) {
+  const grid = document.getElementById(gridId);
+  if (!grid) return;
+
+  const codes = sortCodes(
+    Object.keys(sourceRates).filter(code => code !== 'CUP' && typeof sourceRates[code] === 'number'),
+    PREFERRED_ORDER
+  );
+
+  grid.innerHTML = '';
+
+  if (!codes.length) {
+    showPanelEmpty(grid, emptyText);
+  } else {
+    for (const currency of codes) {
+      const change = rateChanges[currency] || 'neutral';
+      const meta = CURRENCY_META[currency] || { name: currency, flag: '💱' };
+      grid.appendChild(createRateCard(currency, sourceRates[currency], change, meta, 'CUP'));
+    }
+    attachFlagFallbacks(grid);
+  }
+
+  setPanelTime(updId);
+}
+
+function renderElToquePanel(eltoqueRates) {
+  renderCurrencyPanel('eltoqueGrid', 'eltoqueUpd', eltoqueRates, 'Sin datos de El Toque por ahora');
 }
 
 function renderBccPanel(bccRates) {
-  const grid = document.getElementById('bccGrid');
-  if (!grid) return;
-
-  // BCC currencies (official market)
-  const bccCurrencies = ['EUR', 'USD', 'CAD', 'GBP', 'CHF', 'MXN'];
-
-  grid.innerHTML = '';
-
-  for (const currency of bccCurrencies) {
-    const rate = bccRates[currency];
-    if (rate === undefined) continue;
-
-    const change = rateChanges[currency] || 'neutral';
-    const meta = CURRENCY_META[currency] || { name: currency, flag: '💱' };
-
-    const card = createRateCard(currency, rate, change, meta, 'CUP');
-    grid.appendChild(card);
-  }
-  attachFlagFallbacks(grid);
-
-  // Update timestamp
-  const updEl = document.getElementById('bccUpd');
-  if (updEl) {
-    updEl.textContent = new Date().toLocaleTimeString('es-CU', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+  renderCurrencyPanel('bccGrid', 'bccUpd', bccRates, 'Sin datos del BCC por ahora');
 }
 
-// M2: Combustible (GET /api/v1/tasas/fuel, cacheado por background.js)
-const FUEL_META = {
-  'B-94':     { name: 'Gasolina B-94', flag: '⛽', short: 'B94' },
-  'B-90':     { name: 'Gasolina B-90', flag: '⛽', short: 'B90' },
-  'B-83':     { name: 'Gasolina B-83', flag: '⛽', short: 'B83' },
-  'Petroleo': { name: 'Petróleo/Diésel', flag: '🛢️', short: 'GO' },
-  'Gas_LP':   { name: 'Gas Licuado (LP)', flag: '🔥', short: 'GLP' },
+// ═══════════════════════════════════════════════
+//  QvaPay P2P (guardado por background.js desde /tasas/latest → qvapay)
+//  Las claves son MÉTODOS DE PAGO, no monedas: cada valor es cuánto de ese
+//  método se obtiene por 1 USD de QvaPay. Se muestran TODOS los que traiga
+//  la API (los que no tienen operaciones recientes no vienen).
+// ═══════════════════════════════════════════════
+const QVAPAY_ORDER = ['CUP', 'MLC', 'TROPIPAY', 'ETECSA', 'ZELLE', 'CLASICA', 'BOLSATM', 'BANDECPREPAGO', 'SBERBANK'];
+const QVAPAY_META = {
+  CUP:           { name: 'Banco CUP',      short: 'CUP',    icon: '🏦' },
+  MLC:           { name: 'Banco MLC',      short: 'MLC',    icon: '💳' },
+  TROPIPAY:      { name: 'Tropipay',       short: 'TPAY',   icon: '💸' },
+  ETECSA:        { name: 'Saldo ETECSA',   short: 'ETECSA', icon: '📱' },
+  ZELLE:         { name: 'Zelle',          short: 'ZELLE',  icon: '⚡' },
+  CLASICA:       { name: 'Tarjeta Clásica', short: 'CLÁS',  icon: '💳' },
+  BOLSATM:       { name: 'Bolsa TM',       short: 'BOLSA',  icon: '👛' },
+  BANDECPREPAGO: { name: 'Bandec Prepago', short: 'BPREP',  icon: '💳' },
+  SBERBANK:      { name: 'Sberbank',       short: 'SBER',   icon: '🏦' },
 };
-const FUEL_ORDER = ['B-94', 'B-90', 'B-83', 'Petroleo', 'Gas_LP'];
 
-function renderFuelPanel(fuelData) {
-  const grid = document.getElementById('fuelGrid');
+function renderQvapayPanel(qvapayRates) {
+  const grid = document.getElementById('qvapayGrid');
   if (!grid) return;
 
-  const rates = (fuelData && fuelData.rates) || {};
+  const codes = sortCodes(
+    Object.keys(qvapayRates).filter(code => qvapayRates[code] && typeof qvapayRates[code].rate === 'number'),
+    QVAPAY_ORDER
+  );
+
   grid.innerHTML = '';
 
-  for (const key of FUEL_ORDER) {
-    const item = rates[key];
-    if (!item) continue;
-
-    const buy = typeof item.buy === 'number' ? item.buy : null;
-    const sell = typeof item.sell === 'number' ? item.sell : null;
-    if (buy === null && sell === null) continue;
-
-    const meta = FUEL_META[key] || { name: key, flag: '⛽', short: key };
-    const change = item.change || 'neutral';
-    const unit = item.unit || 'CUP/L';
-
-    const card = createFuelCard(meta.short, buy, sell, change, meta, unit);
-    grid.appendChild(card);
+  if (!codes.length) {
+    showPanelEmpty(grid, 'Sin datos de QvaPay por ahora');
+  } else {
+    for (const code of codes) {
+      const meta = QVAPAY_META[code] || { name: code, short: code, icon: '💱' };
+      grid.appendChild(createQvapayCard(qvapayRates[code], meta));
+    }
   }
 
-  if (!grid.children.length) {
-    grid.innerHTML = '<div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div><div class="skel" style="height:80px"></div>';
-  }
-  attachFlagFallbacks(grid);
-
-  const updEl = document.getElementById('fuelUpd');
-  if (updEl) {
-    updEl.textContent = new Date().toLocaleTimeString('es-CU', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+  setPanelTime('qvapayUpd');
 }
 
-// El combustible se cotiza como un RANGO de precios (mínimo-máximo
-// observado en el mercado informal), no como una tasa única. Se muestra
-// tal cual para ser fiel a la realidad.
-function createFuelCard(label, buy, sell, change, meta, unit) {
+// Los valores de QvaPay pueden ser < 10 (Zelle ≈ 1.04, Tropipay ≈ 0.91):
+// con formatRate saldrían como "1.0", así que ahí se usan 2 decimales.
+function formatQv(value) {
+  return value < 10 ? value.toFixed(2) : formatRate(value);
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, ch => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
+
+function createQvapayCard(info, meta) {
+  const change = info.change || 'neutral';
   const card = document.createElement('div');
   card.className = `rcard ${change}`;
 
   const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
-
-  let valueText;
-  if (buy != null && sell != null && buy !== sell) {
-    valueText = `${formatRate(buy)}–${formatRate(sell)}`;
-  } else {
-    valueText = formatRate(sell ?? buy);
-  }
-
+  const arrowLabel = change === 'up' ? 'Sube' : change === 'down' ? 'Baja' : 'Sin cambio';
+  const valueText = formatQv(info.rate);
   const sizeClass = getSizeClassForLength(valueText.length);
 
+  // Compra / venta: dos trozos que no se parten por dentro; si no caben en la
+  // misma línea, la venta baja a la siguiente (mejor que cortar con "…").
+  const sides = [];
+  if (typeof info.buy === 'number') sides.push(`<span>C ${formatQv(info.buy)}</span>`);
+  if (typeof info.sell === 'number') sides.push(`<span>V ${formatQv(info.sell)}</span>`);
+  const bsLine = sides.length
+    ? `<div class="rcard-bs" role="group" aria-label="Compra y venta">${sides.join('')}</div>`
+    : '';
+
+  card.title = meta.name;
   card.innerHTML = `
     <div class="rcard-top">
-      <span class="rcard-sym">${label}</span>
-      <span class="rcard-ico">${flagImgHtml(meta.flag, 15)}</span>
+      <span class="rcard-sym">${escapeHtml(meta.short)}</span>
+      <span class="rcard-ico" aria-hidden="true">${escapeHtml(meta.icon)}</span>
     </div>
     <div class="rcard-val ${sizeClass}">${valueText}</div>
-    <div class="rcard-unit">${unit}</div>
+    <div class="rcard-unit">por 1 USD</div>
+    ${bsLine}
     <div class="rcard-bot">
-      <span class="rcard-name">${meta.name}</span>
-      <span class="rcard-pct">${arrow}</span>
+      <span class="rcard-name">${escapeHtml(meta.name)}</span>
+      <span class="rcard-pct" role="img" aria-label="${arrowLabel}">${arrow}</span>
     </div>
   `;
 
