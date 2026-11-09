@@ -219,7 +219,6 @@ async function loadRates() {
       'lastUpdated',
       'eltoqueRates',
       'bccRates',
-      'cadecaRates',
       'qvapayRates'
     ]);
 

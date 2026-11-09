@@ -64,7 +64,7 @@ export const TICKER_CURRENCY_META = {
 export const DEFAULT_SETTINGS = {
   apiUrl:             DEFAULT_API_URL,
   updateInterval:     5,                // minutes
-  sourcePreference:   'eltoque',        // 'eltoque' | 'bcc' | 'cadeca'
+  sourcePreference:   'eltoque',        // 'eltoque' | 'bcc'
   showChangeType:     'color',
   scrollSpeed:        40,
   tickerEnabled:      true,
