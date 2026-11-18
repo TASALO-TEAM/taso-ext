@@ -279,10 +279,13 @@ function parseSourceRates(sourceData) {
 // aparte para no cambiar el formato numerico de las tasas. Vacio si la API es vieja.
 function parseSourceMeta(sourceData) {
   const meta = {};
-  if (!Array.isArray(sourceData)) return meta;
-  for (const item of sourceData) {
+  // La API manda un objeto {CODIGO: {rate, group, tier, name, order, ...}}; tambien se acepta lista.
+  const entries = Array.isArray(sourceData)
+    ? sourceData.map(item => [(item && (item.currency || item.code)) || '', item])
+    : (sourceData && typeof sourceData === 'object' ? Object.entries(sourceData) : []);
+  for (const [key, item] of entries) {
     if (!item || typeof item !== 'object' || !item.group) continue;
-    const code = (item.currency || item.code || '').toUpperCase();
+    const code = String(key).toUpperCase();
     if (!code) continue;
     meta[code] = {
       name: typeof item.name === 'string' ? item.name : null,
@@ -293,7 +296,6 @@ function parseSourceMeta(sourceData) {
   }
   return meta;
 }
-
 function extractRateValue(item) {
   if (typeof item === 'number') return item;
   if (typeof item === 'string') return parseFloat(item.replace(',', '.')) || null;
