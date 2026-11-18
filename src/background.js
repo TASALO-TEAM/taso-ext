@@ -138,6 +138,7 @@ async function fetchRates() {
 
     // Extract rates from each source separately.
     const eltoqueRates = parseSourceRates(data.data.eltoque, 'eltoque');
+    const eltoqueMeta = parseSourceMeta(data.data.eltoque);
     const bccRates = parseSourceRates(data.data.bcc, 'bcc');
     // QvaPay: métodos de pago P2P (no monedas). Se guarda aparte y NO entra en
     // allRates, porque "CUP"/"MLC" existen también como moneda y chocarían.
@@ -160,6 +161,7 @@ async function fetchRates() {
     await browser.storage.local.set({
       currentRates:  allRates,
       eltoqueRates:  eltoqueRates,
+      eltoqueMeta:   eltoqueMeta,
       bccRates:      bccRates,
       qvapayRates:   qvapayRates,
       rateChanges:   changes,
@@ -271,6 +273,25 @@ function parseSourceRates(sourceData) {
     }
   }
   return rates;
+}
+
+// Metadatos de agrupado que manda la API (name, group, tier, order). Se guardan
+// aparte para no cambiar el formato numerico de las tasas. Vacio si la API es vieja.
+function parseSourceMeta(sourceData) {
+  const meta = {};
+  if (!Array.isArray(sourceData)) return meta;
+  for (const item of sourceData) {
+    if (!item || typeof item !== 'object' || !item.group) continue;
+    const code = (item.currency || item.code || '').toUpperCase();
+    if (!code) continue;
+    meta[code] = {
+      name: typeof item.name === 'string' ? item.name : null,
+      group: item.group,
+      tier: item.tier === 'reference' ? 'reference' : 'market',
+      order: typeof item.order === 'number' ? item.order : 999,
+    };
+  }
+  return meta;
 }
 
 function extractRateValue(item) {

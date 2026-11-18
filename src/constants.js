@@ -17,7 +17,7 @@ export const ALARMS = {
 //  Currency Configuration
 // ═══════════════════════════════════════════════
 export const PREFERRED_ORDER = [
-  'EUR', 'USD', 'MLC', 'BTC', 'TRX', 'USDT',
+  'EUR', 'USD', 'ZELLE', 'MLC', 'CLA', 'BTC', 'TRX', 'USDT',
   'CAD', 'GBP', 'CHF', 'RUB', 'AUD', 'JPY',
   'MXN', 'BRL', 'COP'
 ];
