@@ -134,7 +134,17 @@ body{
   padding:28px clamp(16px,3vw,40px) 36px;gap:28px;
 }
 
-#hdr{ display:flex;align-items:flex-end;justify-content:space-between; width:100%; }
+/* Cabecera en 3 zonas: reloj · fuentes (centradas) · apariencia + Opciones. Los tres controles comparten alto y estilo. */
+#hdr{
+  --ctl-h:36px;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;column-gap:16px;row-gap:14px;
+  width:100%;
+}
+#hdr > div:first-child{justify-self:start}
+#srcHost{justify-self:center}
+#hdr .theme-toggle,#hdr .rv-seg,#hdr .hbtn{height:var(--ctl-h)}
+#hdr .rv-seg{width:auto}
+#hdr .rv-seg-btn{flex:none;padding:0 14px}
 
 #clock{
   font-family:var(--mono);font-size:38px;font-weight:300;
@@ -143,7 +153,7 @@ body{
 
 #dateStr{font-size:12px;color:var(--text2);margin-top:6px;letter-spacing:.02em}
 
-#hdrRight{display:flex;gap:8px;align-items:center}
+#hdrRight{display:flex;gap:8px;align-items:center;justify-self:end}
 
 .theme-toggle{
   display:flex;gap:2px;
@@ -155,16 +165,17 @@ body{
 }
 
 .theme-btn{
-  padding:6px 12px;font-size:12px;border:none;background:transparent;color:var(--text2);
+  padding:0 14px;font-size:12px;font-weight:500;border:none;background:transparent;color:var(--text2);
   cursor:pointer;border-radius:14px;transition:background .18s var(--ease), color .18s var(--ease);
 }
 .theme-btn:hover{color:var(--text);background:var(--bg4)}
 .theme-btn.active{
-  background:var(--accent);color:#fff;font-weight:600;
+  background:var(--accent);color:var(--on-accent,#fff);font-weight:600;
 }
 
 .hbtn{
-  font-size:11px;color:var(--text2);padding:8px 15px;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--text2);padding:0 16px;
   border:1px solid var(--glass-border);
   border-radius:18px;
   backdrop-filter:blur(var(--glass-blur));
@@ -179,147 +190,22 @@ body{
   transform:translateY(-1px);
 }
 
-/* ═══════════════════════════════════════════════
-   PANELS GRID
-═══════════════════════════════════════════════ */
-#panels{ display:grid;grid-template-columns:repeat(3,1fr); gap:18px;width:100%; }
+/* Tasas (rates-view.css pinta las tarjetas; la barra de fuentes va en la cabecera, #srcHost) */
+#ratesRoot{width:100%}
+/* Vista de El Toque centrada: contenido con ancho máximo, títulos de grupo y "Mostrar más" al centro. */
+#ratesRoot .rv-content{width:100%;max-width:1160px;margin-inline:auto}
+#ratesRoot .rv-label,#ratesRoot .rv-more>summary,#ratesRoot .rv-more>.rv-sub{text-align:center}
 
-@media(max-width:1100px){ #panels{grid-template-columns:1fr 1fr} }
-@media(max-width:700px){ #panels{grid-template-columns:1fr} }
-
-.panel{
-  position:relative;overflow:hidden;
-  backdrop-filter:blur(var(--glass-blur));
-  -webkit-backdrop-filter:blur(var(--glass-blur));
-  background:var(--glass-bg);
-  border:1px solid var(--glass-border);
-  border-radius:var(--r);
-  box-shadow:var(--glass-shadow);
-  transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s var(--ease);
+/* Pantallas medianas: reloj y controles arriba, fuentes centradas en su propia fila. Móvil: todo apilado. */
+@media (max-width:1040px){
+  #hdr{grid-template-columns:1fr auto}
+  #srcHost{grid-column:1 / -1;grid-row:2}
 }
-
-.panel:hover{
-  transform:translateY(-3px);
-  box-shadow:var(--glass-shadow-hover);
-  border-color:var(--border-accent);
+@media (max-width:560px){
+  #hdr{grid-template-columns:1fr}
+  #hdrRight{justify-self:start;flex-wrap:wrap}
+  #srcHost{grid-row:auto;justify-self:start}
 }
-
-.pnl-hdr{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:13px 16px 12px;
-  border-bottom:1px solid var(--border);
-}
-
-.pnl-title{
-  display:flex;align-items:center;gap:7px;
-  font-size:10px;font-weight:700;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--text2);
-}
-
-.pnl-right{display:flex;align-items:center;gap:8px}
-.pnl-upd{font-family:var(--mono);font-size:9px;color:var(--text3)}
-
-.badge{
-  font-family:var(--mono);font-size:9px;padding:2px 8px;
-  border-radius:20px;font-weight:600;letter-spacing:.06em;
-}
-.badge-et{background:rgba(108,129,255,.12);color:var(--accent);border:1px solid rgba(108,129,255,.22)}
-.badge-bn{background:rgba(232,171,47,.10);color:var(--binance);border:1px solid rgba(232,171,47,.22)}
-/* QvaPay: badge neutro (Quiet Glass = un solo acento, sin color de marca nuevo) */
-.badge-qv{background:var(--bg3);color:var(--text2);border:1px solid var(--border);white-space:nowrap}
-
-/* ═══════════════════════════════════════════════
-   RATE CARDS GRID
-═══════════════════════════════════════════════ */
-.rgrid{ display:grid;grid-template-columns:repeat(3,1fr); gap:6px;padding:10px; min-height:120px; }
-
-.rcard{
-  position:relative;overflow:hidden;
-  background:var(--bg3);
-  border:1px solid var(--border);
-  border-left:2px solid transparent;
-  border-radius:20px;padding:10px 10px 9px;
-  transition:transform .2s var(--ease), border-color .2s var(--ease), background .2s var(--ease);
-  cursor:default;
-}
-
-.rcard.up{border-left-color:var(--up)}
-.rcard.dn,.rcard.down{border-left-color:var(--dn)}
-.rcard.neu,.rcard.neutral{border-left-color:var(--text3)}
-
-.rcard:hover{
-  transform:translateY(-2px);
-  background:var(--bg4);
-  border-color:var(--border-accent);
-}
-
-/* Glare — barrido de luz diagonal al pasar el cursor */
-.rcard::after{
-  content:'';
-  position:absolute;
-  top:0;bottom:0;left:-60px;width:46px;
-  transform:skewX(-20deg);
-  background:linear-gradient(90deg, transparent, var(--glare), transparent);
-  pointer-events:none;
-  z-index:2;
-  opacity:0;
-}
-
-.rcard:hover::after{
-  opacity:1;
-  animation: glare-sweep 1.9s ease-in-out infinite;
-}
-
-@keyframes glare-sweep{
-  0%{left:-60px}
-  46%{left:112%}
-  100%{left:112%}
-}
-
-.rcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
-.rcard-sym{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.08em}
-.rcard-ico{font-size:13px;line-height:1;opacity:.9}
-.rcard-val{
-  font-family:var(--mono);font-weight:700;line-height:1.1;
-  letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.rcard-val.sz4{font-size:17px}
-.rcard-val.sz5{font-size:15px}
-.rcard-val.sz6{font-size:12px}
-.rcard-val.sz7{font-size:10.5px}
-.rcard-val.sz8{font-size:9.5px}
-
-.rcard.up .rcard-val{color:var(--up)}
-.rcard.dn .rcard-val,.rcard.down .rcard-val{color:var(--dn)}
-.rcard.neu .rcard-val,.rcard.neutral .rcard-val{color:var(--text)}
-
-.rcard-unit{font-size:8px;color:var(--text3);margin-top:2px;letter-spacing:.03em}
-/* Compra · venta (QvaPay): una sola linea, sin partirse */
-.rcard-bs{display:flex;flex-wrap:wrap;column-gap:8px;font-family:var(--mono);font-size:9px;color:var(--text2);margin-top:3px}
-.rcard-bs span{white-space:nowrap}
-/* Panel sin datos de la fuente */
-.pnl-empty{grid-column:1/-1;display:flex;align-items:center;justify-content:center;min-height:100px;padding:12px;font-size:11px;color:var(--text3);text-align:center}
-
-.rcard-bot{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-top:7px;padding-top:6px;border-top:1px solid var(--border);
-}
-.rcard-name{font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:58%}
-.rcard-pct{font-family:var(--mono);font-size:9px;font-weight:600;flex-shrink:0}
-
-.rcard.up .rcard-pct{color:var(--up)}
-.rcard.dn .rcard-pct,.rcard.down .rcard-pct{color:var(--dn)}
-.rcard.neu .rcard-pct,.rcard.neutral .rcard-pct{color:var(--text3)}
-
-/* ═══════════════════════════════════════════════
-   SKELETON LOADER
-═══════════════════════════════════════════════ */
-.skel{
-  background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);
-  background-size:200% 100%;animation:shim 1.4s infinite;border-radius:14px;
-}
-
-@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
 /* ═══════════════════════════════════════════════
    YEAR PROGRESS WIDGET
@@ -419,13 +305,3 @@ body{
 
 .fdot{width:3px;height:3px;background:var(--text3);border-radius:50%}
 
-/* Accesibilidad: sin brillos ni shimmer si el sistema pide menos movimiento */
-@media (prefers-reduced-motion: reduce){
-  .rcard:hover::after{animation:none;opacity:0}
-  .skel{animation:none}
-}
-
-.pnl-group-title{grid-column:1/-1;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-top:4px}
-.pnl-more{margin:0 10px 10px}
-.pnl-more>summary{cursor:pointer;font-size:11px;color:var(--text3);padding:6px 0}
-.pnl-more>.rgrid{padding:6px 0 0;min-height:0}

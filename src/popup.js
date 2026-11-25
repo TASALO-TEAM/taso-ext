@@ -1,19 +1,19 @@
+
 // ═══════════════════════════════════════════════
-//  TASALO — Popup v1
-//  Muestra SOLO ElToque O BCC según configuración
+//  TASALO — Popup v2
+//  Las tasas las pinta rates-view.js (barra de fuentes + tarjetas con gráfico + detalle, como la app y Android).
+//  Aquí quedan el estado de la API, el ticker de Binance, actualizar y abrir opciones.
 // ═══════════════════════════════════════════════
 
-import { PREFERRED_ORDER, CURRENCY_META, DEFAULT_TICKER_CURRENCIES, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
+import { DEFAULT_SETTINGS, DEFAULT_TICKER_CURRENCIES, browser } from './constants.js';
+import { applyAppearance } from './palettes.js';
+import { mountRates } from './rates-view.js';
 
 let settings = {};
-let currentRates = {};
-let rateChanges = {};
-let previousRates = {};
 let binanceRates = {};
 let tickerOpen = false;
 let listenersAttached = false;
 
-// ── Debounce utility ───────────────────────────
 function debounce(fn, delay) {
   let timer = null;
   return (...args) => {
@@ -31,76 +31,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   tickerOpen = (uiState.popupUiState && uiState.popupUiState.tickerOpen) ?? false;
 
   await loadData();
-  applyTheme();
+  applyAppearance({ palette: settings.palette, theme: settings.colorBg });
   applyColors();
-  renderAll();
+  renderTicker();
+  applyTickerState();
   attachListeners();
-  renderSourceSwitch(); // Render source switch state
+  mountRates(document.getElementById('ratesSection'), { compact: true, respectSelection: true, onSourceChange: syncSourcePreference });
 });
 
 async function loadData() {
   const data = await browser.storage.local.get([
-    'settings', 'currentRates', 'previousRates',
-    'rateChanges', 'binanceRates', 'lastUpdated', 'fetchError',
-    'eltoqueRates', 'bccRates'
+    'settings', 'binanceRates', 'lastUpdated', 'fetchError', 'eltoqueRates', 'bccRates', 'qvapayRates',
   ]);
   settings = data.settings ?? {};
-
-  // FIX: antes, si la fuente elegida (ej. BCC) no tenía datos válidos
-  // todavía, este bloque caía silenciosamente a mostrar El Toque bajo la
-  // etiqueta de la fuente elegida — pareciendo que "no cambiaba nada".
-  // Ahora cada fuente muestra SOLO sus propios datos (o vacío si no hay).
-  const pref = settings.sourcePreference === 'bcc' ? 'bcc' : 'eltoque';
-  currentRates = selectRatesForSource(pref, data);
-
-  previousRates = data.previousRates ?? {};
-  rateChanges = data.rateChanges ?? {};
   binanceRates = data.binanceRates ?? {};
 
+  const hasRates = [data.eltoqueRates, data.bccRates, data.qvapayRates].some((r) => r && Object.keys(r).length > 0);
   const errorBanner = document.getElementById('errorBanner');
   const errorMsg = document.getElementById('errorMsg');
-  const loadingText = document.getElementById('ratesLoadingText');
-
   if (data.fetchError) {
     setDot('error');
     if (errorBanner) errorBanner.style.display = 'flex';
     if (errorMsg) errorMsg.textContent = data.fetchError;
-  } else if (Object.keys(currentRates).length > 0) {
-    setDot('ok');
-    if (errorBanner) errorBanner.style.display = 'none';
   } else {
-    setDot('loading');
+    setDot(hasRates ? 'ok' : 'loading');
     if (errorBanner) errorBanner.style.display = 'none';
-  }
-
-  if (loadingText) {
-    if (!data.fetchError && Object.keys(currentRates).length === 0) {
-      const sourceNames = { eltoque: 'El Toque', bcc: 'BCC' };
-      loadingText.textContent = `Sin datos de ${sourceNames[pref] || pref} por ahora`;
-    } else {
-      loadingText.textContent = 'Obteniendo tasas...';
-    }
   }
 
   const updateInfo = document.getElementById('updateInfo');
-  if (data.lastUpdated && updateInfo) {
-    updateInfo.textContent = fmtTime(data.lastUpdated);
-  }
+  if (data.lastUpdated && updateInfo) updateInfo.textContent = fmtTime(data.lastUpdated);
 
   const iv = settings.updateInterval ?? 5;
   const footerInterval = document.getElementById('footerInterval');
-  if (footerInterval) {
-    footerInterval.textContent =
-      `cada ${iv < 60 ? iv + ' min' : (iv / 60).toFixed(1) + ' h'}`;
-  }
-}
-
-// Selecciona las tasas de la fuente activa únicamente — sin mezclarlas
-// ni sustituirlas silenciosamente por otra fuente cuando faltan datos.
-function selectRatesForSource(pref, data) {
-  if (pref === 'bcc')    return data.bccRates    || {};
-  if (pref === 'eltoque') return data.eltoqueRates || {};
-  return data.currentRates || {};
+  if (footerInterval) footerInterval.textContent = `cada ${iv < 60 ? iv + ' min' : (iv / 60).toFixed(1) + ' h'}`;
 }
 
 function setDot(state) {
@@ -108,223 +71,74 @@ function setDot(state) {
   if (dot) dot.className = 'update-dot ' + state;
 }
 
-// ── Render principal ──────────────────────────
-function renderAll() {
-  const hasRates = Object.keys(currentRates).length > 0;
-  const ratesLoading = document.getElementById('ratesLoading');
-  const ratesGrid = document.getElementById('ratesGrid');
-
-  if (ratesLoading) ratesLoading.style.display = hasRates ? 'none' : 'flex';
-  if (ratesGrid) ratesGrid.style.display = hasRates ? 'grid' : 'none';
-
-  if (hasRates) {
-    renderGrid();
-  }
-
-  // El ticker de Binance es independiente de si la fuente elegida
-  // (ElToque/BCC) tiene datos — siempre se intenta renderizar.
-  renderTicker();
-
-  applyTickerState();
-}
-
-// ── Obtener fuente seleccionada (ElToque O BCC) ───────────────────────────
-function getSourcePreference() {
-  // Por defecto: ElToque
-  return settings.sourcePreference === 'bcc' ? 'bcc' : 'eltoque'; // 'cadeca' (eliminada) cae a ElToque
-}
-
-// ── Render Source Switch ─────────────────────────────────
-function renderSourceSwitch() {
-  const currentSource = getSourcePreference();
-  const sourceBtns = document.querySelectorAll('.source-btn');
-  
-  sourceBtns.forEach(btn => {
-    const source = btn.dataset.source;
-    if (source === currentSource) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
-  
-  // Update footer text based on source
-  const footerSource = document.querySelector('.footer-source');
-  if (footerSource) {
-    const sourceNames = {
-      'eltoque': 'El Toque (Informal)',
-      'bcc': 'BCC (Oficial)'
-    };
-    const sourceName = sourceNames[currentSource] || 'El Toque (Informal)';
-    footerSource.innerHTML = `<span class="footer-dot"></span>TASALO — Tasas de ${sourceName}`;
-  }
-}
-
-// ── Handle Source Switch ─────────────────────────────────
-async function handleSourceSwitch(newSource) {
-  const currentSource = getSourcePreference();
-  if (newSource === currentSource) return;
-  
-  // Update settings
-  settings.sourcePreference = newSource;
+// El badge del icono y la rotación usan sourcePreference (solo El Toque o BCC): QvaPay no la cambia.
+async function syncSourcePreference(source) {
+  if (source !== 'eltoque' && source !== 'bcc') return;
+  settings.sourcePreference = source;
   await browser.storage.local.set({ settings });
-  
-  // Notify background script
-  await browser.runtime.sendMessage({ 
-    type: 'UPDATE_SETTINGS', 
-    settings: { sourcePreference: newSource } 
-  });
-  
-  // Re-render
-  renderSourceSwitch();
-  await loadData();
-  renderAll();
+  await browser.runtime.sendMessage({ type: 'UPDATE_SETTINGS', settings: { sourcePreference: source } });
 }
 
-// ── Obtener monedas de la fuente seleccionada ───────────────────────────
-// FIX B5: antes esto devolvía arrays fijos por fuente, ignorando qué
-// monedas había seleccionado el usuario en Opciones si no estaban en la
-// lista hardcodeada. Ahora se derivan directamente de las tasas reales
-// que ya cargó loadData() para la fuente activa (currentRates).
-function getSourceCurrencies() {
-  return Object.keys(currentRates);
-}
-
-// ── Ordenar monedas ───────────────────────────
-function getSortedCurrencies() {
-  const sourceCurrencies = getSourceCurrencies();
-  const order = settings.currencyOrder?.length ? settings.currencyOrder : PREFERRED_ORDER;
-  const selected = settings.selectedCurrencies ?? [];
-  
-  // Filtrar solo las monedas de la fuente seleccionada
-  const filtered = sourceCurrencies.filter(cur => 
-    Object.keys(currentRates).includes(cur)
-  );
-  
-  const sorted = [...filtered].sort((a, b) => {
-    const ia = order.indexOf(a), ib = order.indexOf(b);
-    if (ia === -1 && ib === -1) return a.localeCompare(b);
-    if (ia === -1) return 1;
-    if (ib === -1) return -1;
-    return ia - ib;
-  });
-  
-  return selected.length > 0 ? sorted.filter(c => selected.includes(c)) : sorted;
-}
-
-// ── Grid de tarjetas ──────────────────────────
-function renderGrid() {
-  const grid = document.getElementById('ratesGrid');
-  if (!grid) return;
-
-  const currencies = getSortedCurrencies();
-  const showFlags = settings.showCurrencyFlag !== false;
-  const fontSize = settings.fontSize ?? 13;
-
-  const cols = currencies.length <= 2 ? 'cols-2' : '';
-  grid.className = 'rates-grid ' + cols;
-  grid.innerHTML = '';
-
-  for (const cur of currencies) {
-    const val = currentRates[cur];
-    if (val === undefined) continue;
-    const change = rateChanges[cur] ?? 'neutral';
-    const meta = CURRENCY_META[cur] ?? { name: cur, flag: '💱' };
-    const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
-
-    const card = document.createElement('div');
-    card.className = `rate-card ${change}`;
-
-    let valueHtml, subLabel, diffHtml, valFontSize;
-
-    const numVal = typeof val === 'number' ? val : (val && typeof val.rate === 'number' ? val.rate : 0);
-    const prev = previousRates[cur];
-    const diff = typeof prev === 'number' ? numVal - prev : null;
-    valueHtml = fmtRate(numVal);
-    subLabel = meta.name;
-    diffHtml = diff !== null && diff !== 0 ? (diff > 0 ? '+' : '') + diff.toFixed(1) : '';
-    valFontSize = fontSize + 4;
-    card.title = `${meta.name} · ${cur} en pesos cubanos`;
-
-    card.innerHTML = `
-      <div class="rate-top">
-        <span class="rate-cur">${cur}</span>
-        ${showFlags ? `<span class="rate-flag">${flagImgHtml(meta.flag)}</span>` : ''}
-      </div>
-      <div class="rate-val" style="font-size:${valFontSize}px">${valueHtml}</div>
-      <div class="rate-bot">
-        <span class="rate-name">${subLabel}</span>
-        <span class="rate-diff">${arrow}${diffHtml}</span>
-      </div>
-    `;
-    grid.appendChild(card);
-  }
-  attachFlagFallbacks(grid);
-}
-
-// ── Ticker de Binance ────────────────────────
+// ── Ticker de Binance (solo DOM, sin innerHTML: igual que taso-extmf) ──
 function renderTicker() {
   const strip = document.getElementById('tickerStrip');
   const section = document.getElementById('tickerSection');
   if (!strip) return;
 
-  // Toggle general del ticker (gestión desde Opciones > Ticker)
   if (settings.tickerEnabled === false) {
     if (section) section.style.display = 'none';
     return;
   }
   if (section) section.style.display = '';
 
-  // Usar monedas configuradas o default
   const currencies = settings.tickerCurrencies?.length ? settings.tickerCurrencies : DEFAULT_TICKER_CURRENCIES;
 
-  if (Object.keys(binanceRates).length === 0) {
-    strip.innerHTML = '<span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">Sin datos de Binance</span>';
-    return;
+  function showEmpty(msg) {
+    strip.textContent = '';
+    const s = document.createElement('span');
+    s.style.cssText = 'padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)';
+    s.textContent = msg;
+    strip.appendChild(s);
   }
 
-  const itemsHtml = currencies
-    .filter(cur => binanceRates[cur] !== undefined)
-    .map(cur => {
-      const rate = binanceRates[cur];
-      return `<span class="t-item bnc">` +
-        `<span class="t-cur">${cur}</span>` +
-        `<span class="t-val">${rate.toFixed(2)}</span>` +
-        `<span class="t-unit">USDT</span>` +
-        `</span><span class="tsep">·</span>`;
-    })
-    .join('');
+  if (Object.keys(binanceRates).length === 0) { showEmpty('Sin datos de Binance'); return; }
 
-  if (!itemsHtml) {
-    strip.innerHTML = '<span style="padding:0 16px;font-size:9px;color:var(--text3);font-family:var(--mono)">Sin datos</span>';
-    return;
+  const filtered = currencies.filter((cur) => binanceRates[cur] !== undefined);
+  if (!filtered.length) { showEmpty('Sin datos'); return; }
+
+  function item(cur, rate) {
+    const wrap = document.createElement('span');
+    wrap.className = 't-item bnc';
+    for (const [cls, text] of [['t-cur', cur], ['t-val', rate.toFixed(2)], ['t-unit', 'USDT']]) {
+      const el = document.createElement('span');
+      el.className = cls;
+      el.textContent = text;
+      wrap.appendChild(el);
+    }
+    const sep = document.createElement('span');
+    sep.className = 'tsep';
+    sep.textContent = '·';
+    return [wrap, sep];
   }
 
-  // Duplicate for seamless loop
-  strip.innerHTML = itemsHtml + itemsHtml;
+  strip.textContent = '';
+  for (let pass = 0; pass < 2; pass++) { // duplicado para el bucle continuo
+    for (const cur of filtered) item(cur, binanceRates[cur]).forEach((el) => strip.appendChild(el));
+  }
 
-  // Calculate animation duration, escalado por settings.scrollSpeed
-  // (40 = velocidad base/default; mayor valor = ticker más rápido)
+  // scrollSpeed 40 = velocidad base; mayor valor = ticker más rápido
   const speed = settings.scrollSpeed || 40;
-  const baseDuration = Math.max(15, currencies.length * 0.4);
+  const baseDuration = Math.max(15, filtered.length * 0.4);
   const duration = Math.max(6, baseDuration * (40 / speed));
   strip.style.animationDuration = `${duration}s`;
   document.documentElement.style.setProperty('--ticker-dur', `${duration}s`);
 }
 
-// ── Toggle ticker ─────────────────────────────
 function applyTickerState() {
   const body = document.getElementById('tickerBody');
   const chevron = document.getElementById('tickerChevron');
   if (body) body.classList.toggle('open', tickerOpen);
   if (chevron) chevron.classList.toggle('open', tickerOpen);
-}
-
-// ── Utilidades ────────────────────────────────
-function fmtRate(val) {
-  if (val >= 10000) return val.toLocaleString('es-CU', { maximumFractionDigits: 0 });
-  if (val >= 1000) return val.toLocaleString('es-CU', { maximumFractionDigits: 0 });
-  return val.toFixed(val % 1 === 0 ? 0 : 1);
 }
 
 function fmtTime(iso) {
@@ -333,33 +147,16 @@ function fmtTime(iso) {
   } catch { return '—'; }
 }
 
-function applyTheme() {
-  const t = settings.colorBg;
-  if (t === 'dark') document.body.classList.add('theme-dark');
-  if (t === 'light') document.body.classList.add('theme-light');
-}
-
+// Los colores sube/baja personalizados solo pisan la paleta si el usuario los cambió: con los de fábrica manda la paleta.
 function applyColors() {
   const root = document.documentElement;
-  if (settings.colorUp) root.style.setProperty('--up', settings.colorUp);
-  if (settings.colorDown) root.style.setProperty('--down', settings.colorDown);
-  if (settings.colorNeutral && settings.colorNeutral !== 'auto')
-    root.style.setProperty('--neutral', settings.colorNeutral);
+  if (settings.colorUp && settings.colorUp !== DEFAULT_SETTINGS.colorUp) root.style.setProperty('--up', settings.colorUp);
+  if (settings.colorDown && settings.colorDown !== DEFAULT_SETTINGS.colorDown) root.style.setProperty('--down', settings.colorDown);
+  if (settings.colorNeutral && settings.colorNeutral !== 'auto') root.style.setProperty('--neutral', settings.colorNeutral);
 }
 
 // ── Listeners ─────────────────────────────────
 function attachListeners() {
-  // Source Switch
-  const sourceSwitch = document.getElementById('sourceSwitch');
-  if (sourceSwitch) {
-    sourceSwitch.addEventListener('click', (e) => {
-      const btn = e.target.closest('.source-btn');
-      if (btn && btn.dataset.source) {
-        handleSourceSwitch(btn.dataset.source);
-      }
-    });
-  }
-
   const btnRefresh = document.getElementById('btnRefresh');
   const btnSettings = document.getElementById('btnSettings');
   const tickerToggle = document.getElementById('tickerToggle');
@@ -369,23 +166,10 @@ function attachListeners() {
       btnRefresh.classList.add('spinning');
       btnRefresh.disabled = true;
       setDot('loading');
-
       try {
         await browser.runtime.sendMessage({ type: 'FETCH_NOW' });
-
-        // Recargar datos incluyendo las tasas por fuente
-        const data = await browser.storage.local.get([
-          'currentRates', 'rateChanges', 'binanceRates', 
-          'lastUpdated', 'fetchError', 'eltoqueRates', 'bccRates'
-        ]);
-
-        const pref = settings.sourcePreference === 'bcc' ? 'bcc' : 'eltoque';
-        currentRates = selectRatesForSource(pref, data);
-
-        rateChanges = data.rateChanges || {};
-        binanceRates = data.binanceRates || {};
-
-        renderAll();
+        await loadData();
+        renderTicker();
       } catch (error) {
         console.error('Refresh error:', error);
       } finally {
@@ -395,11 +179,7 @@ function attachListeners() {
     });
   }
 
-  if (btnSettings) {
-    btnSettings.addEventListener('click', () => {
-      browser.runtime.openOptionsPage();
-    });
-  }
+  if (btnSettings) btnSettings.addEventListener('click', () => browser.runtime.openOptionsPage());
 
   if (tickerToggle) {
     tickerToggle.addEventListener('click', () => {
@@ -411,20 +191,14 @@ function attachListeners() {
 }
 
 const debouncedStorageUpdate = debounce(async (changes) => {
-  if (changes.currentRates || changes.rateChanges || changes.binanceRates || changes.lastUpdated || changes.fetchError || changes.eltoqueRates || changes.bccRates) {
-    if (changes.eltoqueRates || changes.bccRates) {
-      // Re-evaluate source preference when source-specific rates change
-      await loadData();
-    } else {
-      if (changes.currentRates) currentRates = changes.currentRates.newValue || {};
-      if (changes.rateChanges) rateChanges = changes.rateChanges.newValue || {};
-      if (changes.binanceRates) binanceRates = changes.binanceRates.newValue || {};
-    }
+  if (changes.settings) {
+    const next = changes.settings.newValue || {};
+    applyAppearance({ palette: next.palette, theme: next.colorBg });
+  }
+  if (changes.settings || changes.binanceRates || changes.lastUpdated || changes.fetchError || changes.eltoqueRates || changes.bccRates || changes.qvapayRates) {
     await loadData();
-    renderAll();
+    renderTicker();
   }
 }, 100);
 
-browser.storage.onChanged.addListener((changes) => {
-  debouncedStorageUpdate(changes);
-});
+browser.storage.onChanged.addListener((changes) => debouncedStorageUpdate(changes));

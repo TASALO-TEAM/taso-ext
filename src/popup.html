@@ -6,7 +6,10 @@
   <title>TASALO — Tasas de Cambio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="theme-boot.js"></script>
   <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="palettes.css">
+  <link rel="stylesheet" href="rates-view.css">
 </head>
 <body>
   <div class="popup-wrap">
@@ -20,17 +23,6 @@
         </div>
       </div>
       <div class="header-right">
-        <!-- Source Switch -->
-        <div class="source-switch" id="sourceSwitch" title="Cambiar fuente de datos">
-          <button class="source-btn active" data-source="eltoque" title="El Toque (Mercado Informal)">
-            <span class="source-icon">🔵</span>
-            <span class="source-label">Toque</span>
-          </button>
-          <button class="source-btn" data-source="bcc" title="BCC (Mercado Oficial)">
-            <span class="source-icon">🟢</span>
-            <span class="source-label">BCC</span>
-          </button>
-        </div>
         <span class="update-dot" id="updateDot" title="Estado API"></span>
         <span class="update-info" id="updateInfo" title="Última actualización">—</span>
         <button class="icon-btn" id="btnRefresh" title="Actualizar ahora">
@@ -42,7 +34,7 @@
         <button class="icon-btn" id="btnSettings" title="Configuración">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
       </div>
@@ -55,13 +47,7 @@
     </div>
 
     <!-- Rates Grid -->
-    <div class="rates-section" id="ratesSection">
-      <div class="rates-loading" id="ratesLoading">
-        <div class="spinner"></div>
-        <span id="ratesLoadingText">Obteniendo tasas...</span>
-      </div>
-      <div class="rates-grid" id="ratesGrid" style="display:none"></div>
-    </div>
+    <div class="rates-section" id="ratesSection"></div>
 
     <!-- Ticker -->
     <div class="ticker-section" id="tickerSection">
@@ -92,7 +78,7 @@
     <footer class="footer">
       <span class="footer-source">
         <span class="footer-dot"></span>
-        TASALO — Tasas del mercado informal (No Oficial)
+        TASALO — Tasas referenciales de Cuba
       </span>
       <span class="footer-interval" id="footerInterval">—</span>
     </footer>

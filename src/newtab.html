@@ -6,40 +6,14 @@
 <title>TASALO - Tasas de Cambio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="theme-boot.js"></script>
 <link rel="stylesheet" href="newtab.css">
+<link rel="stylesheet" href="palettes.css">
+<link rel="stylesheet" href="rates-view.css">
 </head>
 <body>
 
-<script type="module">
-const browser = globalThis.browser || chrome;
-
-async function init() {
-  try {
-    // Load settings first
-    const data = await browser.storage.local.get('settings');
-    const settings = data.settings || {};
-    
-    // Check if new tab is DISABLED
-    if (settings.newTabEnabled === false) {
-      // Redirect to Google
-      browser.tabs.create({url: 'https://www.google.com'});
-      // Close current tab
-      browser.tabs.getCurrent((tab) => {
-        if (tab) browser.tabs.remove(tab.id);
-      });
-      return;
-    }
-    
-    // New tab is ENABLED - continue loading normally
-    // Nothing to do, just let the page load
-  } catch (error) {
-    console.error('[NewTab] Error:', error);
-  }
-}
-
-// Start
-init();
-</script>
+<script src="newtab-init.js"></script>
 
 <!-- Ticker Binance -->
 <div id="tickerZone">
@@ -57,6 +31,8 @@ init();
       <div id="clock">--:--:--</div>
       <div id="dateStr">Cargando fecha...</div>
     </div>
+    <!-- Fuentes (rates-view.js): misma fila y mismo estilo que Auto/Dark/Light y Opciones -->
+    <div id="srcHost"></div>
     <div id="hdrRight">
       <div class="theme-toggle">
         <button class="theme-btn active" data-theme="auto">Auto</button>
@@ -67,77 +43,8 @@ init();
     </div>
   </div>
 
-  <!-- Paneles de tasas -->
-  <div id="panels">
-    
-    <!-- Panel ElToque (Izquierda) -->
-    <div class="panel" id="panelEltoque">
-      <div class="pnl-hdr">
-        <div class="pnl-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2v20M2 12h20"/>
-          </svg>
-          El Toque
-        </div>
-        <div class="pnl-right">
-          <span class="pnl-upd" id="eltoqueUpd">--:--</span>
-          <span class="badge badge-et">Informal</span>
-        </div>
-      </div>
-      <div class="rgrid" id="eltoqueGrid">
-        <div class="skel" style="height:80px"></div>
-        <div class="skel" style="height:80px"></div>
-        <div class="skel" style="height:80px"></div>
-      </div>
-    </div>
-
-    <!-- Panel BCC (Centro) -->
-    <div class="panel" id="panelBcc">
-      <div class="pnl-hdr">
-        <div class="pnl-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path d="M12 6v6l4 2"/>
-          </svg>
-          BCC
-        </div>
-        <div class="pnl-right">
-          <span class="pnl-upd" id="bccUpd">--:--</span>
-          <span class="badge badge-bn">Oficial</span>
-        </div>
-      </div>
-      <div class="rgrid" id="bccGrid">
-        <div class="skel" style="height:80px"></div>
-        <div class="skel" style="height:80px"></div>
-        <div class="skel" style="height:80px"></div>
-      </div>
-    </div>
-
-    <!-- Panel QvaPay P2P (Derecha) -->
-    <div class="panel" id="panelQvapay">
-      <div class="pnl-hdr">
-        <div class="pnl-title">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 8h15"/>
-            <path d="M15 4l4 4-4 4"/>
-            <path d="M20 16H5"/>
-            <path d="M9 12l-4 4 4 4"/>
-          </svg>
-          QvaPay
-        </div>
-        <div class="pnl-right">
-          <span class="pnl-upd" id="qvapayUpd">--:--</span>
-          <span class="badge badge-qv">P2P</span>
-        </div>
-      </div>
-      <div class="rgrid" id="qvapayGrid">
-        <div class="skel" style="height:80px"></div>
-        <div class="skel" style="height:80px"></div>
-        <div class="skel" style="height:80px"></div>
-      </div>
-    </div>
-
-  </div>
+  <!-- Tasas: barra de fuentes + tarjetas con gráfico (rates-view.js) -->
+  <div id="ratesRoot"></div>
 
   <!-- Year Progress Widget -->
   <div id="yearWidget">

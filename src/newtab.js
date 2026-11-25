@@ -3,11 +3,11 @@
 //  Liquid Glass con tres paneles (ElToque + BCC + QvaPay)
 // ═══════════════════════════════════════════════
 
-import { PREFERRED_ORDER, CURRENCY_META, PRODUCTION_API_URL, DEFAULT_TICKER_CURRENCIES, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
+import { DEFAULT_TICKER_CURRENCIES, browser } from './constants.js';
+import { applyAppearance } from './palettes.js';
+import { mountRates } from './rates-view.js';
 
 // Estado global
-let currentRates = {};
-let rateChanges = {};
 let binanceRates = {};
 let settings = {};
 
@@ -16,16 +16,19 @@ let settings = {};
 // ═══════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
   await loadSettings();
+  // Nueva pestaña desactivada: newtab-init.js ya la está cambiando por la nativa del navegador; no se monta nada.
+  if (settings.newTabEnabled === false) return;
   setupTheme();
   setupClock();
   await setupYearProgress();
   setFooterVersion();
+  mountRates(document.getElementById('ratesRoot'), { segHost: document.getElementById('srcHost') });
   await loadRates();
   setupRefresh();
   
   // Escuchar cambios en storage
   browser.storage.onChanged.addListener((changes) => {
-    if (changes.currentRates || changes.rateChanges || changes.eltoqueRates || changes.eltoqueMeta || changes.bccRates || changes.qvapayRates) {
+    if (changes.binanceRates) {
       loadRates();
     }
     if (changes.yearState) {
@@ -33,6 +36,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (changes.settings) {
       settings = changes.settings.newValue || {};
+      applyAppearance({ palette: settings.palette, theme: settings.colorBg });
+      syncThemeButtons();
       renderBinanceTicker();
     }
   });
@@ -53,40 +58,24 @@ function setFooterVersion() {
   }
 }
 
+function syncThemeButtons() {
+  const active = settings.colorBg || 'auto';
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === active));
+}
+
 function setupTheme() {
-  const theme = settings.colorBg || 'auto';
-  applyTheme(theme);
-  
-  // Theme toggle buttons
+  applyAppearance({ palette: settings.palette, theme: settings.colorBg });
+  syncThemeButtons();
+
   document.querySelectorAll('.theme-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      applyTheme(btn.dataset.theme);
-      
-      // Guardar preferencia
       settings.colorBg = btn.dataset.theme;
+      applyAppearance({ theme: settings.colorBg });
+      syncThemeButtons();
       browser.storage.local.set({ settings });
     });
   });
 }
-
-function applyTheme(theme) {
-  if (theme === 'dark') {
-    document.documentElement.classList.remove('light');
-  } else if (theme === 'light') {
-    document.documentElement.classList.add('light');
-  } else {
-    // Auto - usar preferencia del sistema
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (prefersDark) {
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-    }
-  }
-}
-
 // ═══════════════════════════════════════════════
 //  Clock
 // ═══════════════════════════════════════════════
@@ -175,7 +164,9 @@ async function setupYearProgress() {
   }
 
   if (pctEl) {
-    pctEl.innerHTML = `${percent.toFixed(1)}% <small>completado</small>`;
+    const small = document.createElement('small');
+    small.textContent = 'completado';
+    pctEl.replaceChildren(document.createTextNode(`${percent.toFixed(1)}% `), small);
   }
 
   if (daysPassedEl) daysPassedEl.textContent = daysPassed;
@@ -208,298 +199,17 @@ async function setupYearProgress() {
 }
 
 // ═══════════════════════════════════════════════
-//  Load Rates
+//  Tasas: las pinta rates-view.js (barra de fuentes + tarjetas con gráfico + detalle). Aquí solo el ticker.
 // ═══════════════════════════════════════════════
 async function loadRates() {
   try {
-    const data = await browser.storage.local.get([
-      'currentRates',
-      'rateChanges',
-      'binanceRates',
-      'lastUpdated',
-      'eltoqueRates',
-      'eltoqueMeta',
-      'bccRates',
-      'qvapayRates'
-    ]);
-
-    // Use source-specific rates for each panel
-    currentRates = data.currentRates || {};
-    rateChanges = data.rateChanges || {};
+    const data = await browser.storage.local.get('binanceRates');
     binanceRates = data.binanceRates || {};
-
-    renderElToquePanel(data.eltoqueRates || {}, data.eltoqueMeta || {});
-    renderBccPanel(data.bccRates || {});
-    renderQvapayPanel(data.qvapayRates || {});
     renderBinanceTicker();
-
   } catch (error) {
     console.error('Error loading rates:', error);
   }
 }
-
-// Orden de códigos: primero los conocidos según `order` y después el resto
-// (monedas o métodos nuevos que añada la API) por orden alfabético, para que
-// todo lo que traiga la fuente se muestre aunque la extensión no lo conozca.
-function sortCodes(codes, order) {
-  return [...codes].sort((a, b) => {
-    const ia = order.indexOf(a);
-    const ib = order.indexOf(b);
-    if (ia === -1 && ib === -1) return a.localeCompare(b);
-    if (ia === -1) return 1;
-    if (ib === -1) return -1;
-    return ia - ib;
-  });
-}
-
-function setPanelTime(id) {
-  const updEl = document.getElementById(id);
-  if (updEl) {
-    updEl.textContent = new Date().toLocaleTimeString('es-CU', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
-}
-
-function showPanelEmpty(grid, text) {
-  grid.innerHTML = '';
-  const msg = document.createElement('div');
-  msg.className = 'pnl-empty';
-  msg.textContent = text;
-  grid.appendChild(msg);
-}
-
-// Panel de una fuente con una tasa por moneda (ElToque, BCC): muestra TODAS
-// las monedas que traiga la fuente. "CUP" es la moneda base, no una tarjeta.
-function renderCurrencyPanel(gridId, updId, sourceRates, emptyText) {
-  const grid = document.getElementById(gridId);
-  if (!grid) return;
-
-  const codes = sortCodes(
-    Object.keys(sourceRates).filter(code => code !== 'CUP' && typeof sourceRates[code] === 'number'),
-    PREFERRED_ORDER
-  );
-
-  grid.innerHTML = '';
-
-  if (!codes.length) {
-    showPanelEmpty(grid, emptyText);
-  } else {
-    for (const currency of codes) {
-      const change = rateChanges[currency] || 'neutral';
-      const meta = CURRENCY_META[currency] || { name: currency, flag: '💱' };
-      grid.appendChild(createRateCard(currency, sourceRates[currency], change, meta, 'CUP'));
-    }
-    attachFlagFallbacks(grid);
-  }
-
-  setPanelTime(updId);
-}
-
-const ELTOQUE_GROUPS = [
-  { id: 'main', title: 'Principales' },
-  { id: 'crypto', title: 'Cripto' },
-  { id: 'other', title: 'Otras monedas' },
-];
-
-function appendRateCards(container, codes, rates, meta) {
-  for (const currency of codes) {
-    const change = rateChanges[currency] || 'neutral';
-    const local = CURRENCY_META[currency];
-    const cardMeta = local || { name: (meta[currency] && meta[currency].name) || currency, flag: '\u{1F4B1}' };
-    container.appendChild(createRateCard(currency, rates[currency], change, cardMeta, 'CUP'));
-  }
-  attachFlagFallbacks(container);
-}
-
-// El Toque: si la API manda grupos, secciones Principales / Cripto / Otras con las
-// monedas de mercado y, plegadas en "Mostrar mas", las de referencia (0 ofertas).
-// Sin metadatos (API vieja) se ve como antes: lista plana.
-function renderElToquePanel(eltoqueRates, eltoqueMeta) {
-  const meta = eltoqueMeta || {};
-  const grid = document.getElementById('eltoqueGrid');
-  const oldMore = document.getElementById('eltoqueMore');
-  if (oldMore) oldMore.remove();
-
-  const codes = Object.keys(eltoqueRates).filter(
-    c => c !== 'CUP' && typeof eltoqueRates[c] === 'number'
-  );
-  if (!grid || !codes.length || !codes.some(c => meta[c])) {
-    renderCurrencyPanel('eltoqueGrid', 'eltoqueUpd', eltoqueRates, 'Sin datos de El Toque por ahora');
-    return;
-  }
-
-  const byOrder = (a, b) => ((meta[a] || {}).order ?? 999) - ((meta[b] || {}).order ?? 999) || a.localeCompare(b);
-  const isRef = c => meta[c] && meta[c].tier === 'reference';
-  const market = codes.filter(c => !isRef(c));
-  const reference = codes.filter(isRef).sort(byOrder);
-
-  grid.innerHTML = '';
-  for (const { id, title } of ELTOQUE_GROUPS) {
-    const inGroup = market.filter(c => ((meta[c] || {}).group || 'other') === id).sort(byOrder);
-    if (!inGroup.length) continue;
-    const h = document.createElement('div');
-    h.className = 'pnl-group-title';
-    h.textContent = title;
-    grid.appendChild(h);
-    appendRateCards(grid, inGroup, eltoqueRates, meta);
-  }
-
-  if (reference.length) {
-    const details = document.createElement('details');
-    details.id = 'eltoqueMore';
-    details.className = 'pnl-more';
-    const summary = document.createElement('summary');
-    summary.textContent = `Mostrar m\u00e1s (${reference.length})`;
-    const refGrid = document.createElement('div');
-    refGrid.className = 'rgrid';
-    details.append(summary, refGrid);
-    appendRateCards(refGrid, reference, eltoqueRates, meta);
-    grid.insertAdjacentElement('afterend', details);
-  }
-
-  setPanelTime('eltoqueUpd');
-}
-
-function renderBccPanel(bccRates) {
-  renderCurrencyPanel('bccGrid', 'bccUpd', bccRates, 'Sin datos del BCC por ahora');
-}
-
-// ═══════════════════════════════════════════════
-//  QvaPay P2P (guardado por background.js desde /tasas/latest → qvapay)
-//  Las claves son MÉTODOS DE PAGO, no monedas: cada valor es cuánto de ese
-//  método se obtiene por 1 USD de QvaPay. Se muestran TODOS los que traiga
-//  la API (los que no tienen operaciones recientes no vienen).
-// ═══════════════════════════════════════════════
-const QVAPAY_ORDER = ['CUP', 'MLC', 'TROPIPAY', 'ETECSA', 'ZELLE', 'CLASICA', 'BOLSATM', 'BANDECPREPAGO', 'SBERBANK'];
-const QVAPAY_META = {
-  CUP:           { name: 'Banco CUP',      short: 'CUP',    icon: '🏦' },
-  MLC:           { name: 'Banco MLC',      short: 'MLC',    icon: '💳' },
-  TROPIPAY:      { name: 'Tropipay',       short: 'TPAY',   icon: '💸' },
-  ETECSA:        { name: 'Saldo ETECSA',   short: 'ETECSA', icon: '📱' },
-  ZELLE:         { name: 'Zelle',          short: 'ZELLE',  icon: '⚡' },
-  CLASICA:       { name: 'Tarjeta Clásica', short: 'CLÁS',  icon: '💳' },
-  BOLSATM:       { name: 'Bolsa TM',       short: 'BOLSA',  icon: '👛' },
-  BANDECPREPAGO: { name: 'Bandec Prepago', short: 'BPREP',  icon: '💳' },
-  SBERBANK:      { name: 'Sberbank',       short: 'SBER',   icon: '🏦' },
-};
-
-function renderQvapayPanel(qvapayRates) {
-  const grid = document.getElementById('qvapayGrid');
-  if (!grid) return;
-
-  const codes = sortCodes(
-    Object.keys(qvapayRates).filter(code => qvapayRates[code] && typeof qvapayRates[code].rate === 'number'),
-    QVAPAY_ORDER
-  );
-
-  grid.innerHTML = '';
-
-  if (!codes.length) {
-    showPanelEmpty(grid, 'Sin datos de QvaPay por ahora');
-  } else {
-    for (const code of codes) {
-      const meta = QVAPAY_META[code] || { name: code, short: code, icon: '💱' };
-      grid.appendChild(createQvapayCard(qvapayRates[code], meta));
-    }
-  }
-
-  setPanelTime('qvapayUpd');
-}
-
-// Los valores de QvaPay pueden ser < 10 (Zelle ≈ 1.04, Tropipay ≈ 0.91):
-// con formatRate saldrían como "1.0", así que ahí se usan 2 decimales.
-function formatQv(value) {
-  return value < 10 ? value.toFixed(2) : formatRate(value);
-}
-
-function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, ch => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
-  ));
-}
-
-function createQvapayCard(info, meta) {
-  const change = info.change || 'neutral';
-  const card = document.createElement('div');
-  card.className = `rcard ${change}`;
-
-  const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
-  const arrowLabel = change === 'up' ? 'Sube' : change === 'down' ? 'Baja' : 'Sin cambio';
-  const valueText = formatQv(info.rate);
-  const sizeClass = getSizeClassForLength(valueText.length);
-
-  // Compra / venta: dos trozos que no se parten por dentro; si no caben en la
-  // misma línea, la venta baja a la siguiente (mejor que cortar con "…").
-  const sides = [];
-  if (typeof info.buy === 'number') sides.push(`<span>C ${formatQv(info.buy)}</span>`);
-  if (typeof info.sell === 'number') sides.push(`<span>V ${formatQv(info.sell)}</span>`);
-  const bsLine = sides.length
-    ? `<div class="rcard-bs" role="group" aria-label="Compra y venta">${sides.join('')}</div>`
-    : '';
-
-  card.title = meta.name;
-  card.innerHTML = `
-    <div class="rcard-top">
-      <span class="rcard-sym">${escapeHtml(meta.short)}</span>
-      <span class="rcard-ico" aria-hidden="true">${escapeHtml(meta.icon)}</span>
-    </div>
-    <div class="rcard-val ${sizeClass}">${valueText}</div>
-    <div class="rcard-unit">por 1 USD</div>
-    ${bsLine}
-    <div class="rcard-bot">
-      <span class="rcard-name">${escapeHtml(meta.name)}</span>
-      <span class="rcard-pct" role="img" aria-label="${arrowLabel}">${arrow}</span>
-    </div>
-  `;
-
-  return card;
-}
-
-function createRateCard(currency, rate, change, meta, unit) {
-  const card = document.createElement('div');
-  card.className = `rcard ${change}`;
-  
-  const sizeClass = getRateSizeClass(rate);
-  const arrow = change === 'up' ? '▲' : change === 'down' ? '▼' : '—';
-  
-  card.innerHTML = `
-    <div class="rcard-top">
-      <span class="rcard-sym">${currency}</span>
-      <span class="rcard-ico">${flagImgHtml(meta.flag, 15)}</span>
-    </div>
-    <div class="rcard-val ${sizeClass}">${formatRate(rate)}</div>
-    <div class="rcard-unit">${unit}</div>
-    <div class="rcard-bot">
-      <span class="rcard-name">${meta.name}</span>
-      <span class="rcard-pct">${arrow}</span>
-    </div>
-  `;
-  
-  return card;
-}
-
-function getRateSizeClass(rate) {
-  const len = formatRate(rate).length;
-  return getSizeClassForLength(len);
-}
-
-function getSizeClassForLength(len) {
-  if (len >= 13) return 'sz7';
-  if (len >= 11) return 'sz6';
-  if (len >= 9) return 'sz5';
-  return 'sz4';
-}
-
-function formatRate(rate) {
-  if (rate >= 1000000) return (rate / 1000000).toFixed(1) + 'M';
-  if (rate >= 100000) return Math.round(rate / 1000) + 'k';
-  if (rate >= 10000) return (rate / 1000).toFixed(1) + 'k';
-  if (rate >= 1000) return String(Math.round(rate));
-  return rate % 1 === 0 ? String(rate) : rate.toFixed(1);
-}
-
 function renderBinanceTicker() {
   const strip = document.getElementById('tickerStrip');
   const zone = document.getElementById('tickerZone');
@@ -516,23 +226,28 @@ function renderBinanceTicker() {
   const currencies = selected.filter(cur => binanceRates[cur] !== undefined);
   if (currencies.length === 0) return;
   
-  const itemsHtml = currencies.map(cur => {
-    const rate = binanceRates[cur];
-    if (!rate) return '';
-    
-    // Binance rates are in USDT, show as crypto/USDT
-    return `<span class="ti bnc">` +
-      `<span class="tsrc">Binance</span>` +
-      `<span class="tcur">${cur}</span>` +
-      `<span class="tval">${rate.toFixed(2)}</span>` +
-      `<span class="tunit">USDT</span>` +
-      `</span><span class="tsep">·</span>`;
-  }).join('');
-  
-  if (!itemsHtml.trim()) return;
-  
-  // Duplicate for seamless loop
-  strip.innerHTML = itemsHtml + itemsHtml;
+  function makeItem(cur, rate) {
+    const wrap = document.createElement('span');
+    wrap.className = 'ti bnc';
+    for (const [cls, text] of [['tsrc', 'Binance'], ['tcur', cur], ['tval', rate.toFixed(2)], ['tunit', 'USDT']]) {
+      const el = document.createElement('span');
+      el.className = cls;
+      el.textContent = text;
+      wrap.appendChild(el);
+    }
+    const sep = document.createElement('span');
+    sep.className = 'tsep';
+    sep.textContent = '·';
+    return [wrap, sep];
+  }
+
+  strip.textContent = '';
+  for (let pass = 0; pass < 2; pass++) { // duplicado para el bucle continuo
+    for (const cur of currencies) {
+      if (!binanceRates[cur]) continue; // igual que antes: sin tasa válida no se pinta
+      makeItem(cur, binanceRates[cur]).forEach((el) => strip.appendChild(el));
+    }
+  }
   
   // Calculate animation duration, escalado por settings.scrollSpeed
   // (40 = velocidad base/default; mayor valor = ticker más rápido)

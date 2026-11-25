@@ -6,7 +6,9 @@
   <title>TASALO — Configuración</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="theme-boot.js"></script>
   <link rel="stylesheet" href="options.css">
+  <link rel="stylesheet" href="palettes.css">
 </head>
 <body>
   <div class="layout">
@@ -103,6 +105,12 @@
           </div>
 
           <div class="field-group">
+            <label class="label">Paleta de color</label>
+            <div id="paletteList"></div>
+            <p class="hint">Las mismas paletas que la app de Android. Se aplican al instante en el popup y en la nueva pestaña</p>
+          </div>
+
+          <div class="field-group">
             <label class="label">Fuente de datos preferida</label>
             <div class="btn-group" id="sourceGroup">
               <button class="seg-btn active" data-val="eltoque">🔵 El Toque</button>
@@ -115,7 +123,7 @@
             <div class="toggle-row">
               <div>
                 <span class="toggle-label">Nueva pestaña personalizada</span>
-                <span class="toggle-hint">Reemplaza la página de nueva pestaña con el dashboard de TASALO</span>
+                <span class="toggle-hint">Reemplaza la página de nueva pestaña con el dashboard de TASALO. Desactivada, se usa la nueva pestaña propia del navegador (en Firefox, una en blanco)</span>
               </div>
               <label class="toggle">
                 <input type="checkbox" id="newTabEnabled" checked>
