@@ -63,50 +63,6 @@
   }
 }
 
-body.theme-dark {
-  --bg: #0a0a10;
-  --bg-glass: rgba(15, 15, 24, 0.90);
-  --bg-glass-solid: rgba(10, 10, 16, 0.98);
-  --border: rgba(255, 255, 255, 0.07);
-  --border-accent: rgba(108, 129, 255, 0.35);
-  --text: #f2f2f7;
-  --text2: #8d8da3;
-  --text3: #55556a;
-  --accent: #6c81ff;
-  --accent-soft: rgba(108, 129, 255, 0.14);
-  --accent-glow: rgba(108, 129, 255, 0.28);
-  --up: #f2555f;
-  --down: #34d399;
-  --neutral: #86869c;
-  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-accent: 0 8px 22px rgba(108, 129, 255, 0.18);
-  --ticker-inner: rgba(20, 20, 30, 0.88);
-  --glare: rgba(255, 255, 255, 0.16);
-}
-
-body.theme-light {
-  --bg: #e8eaf0;
-  --bg-glass: rgba(232, 234, 240, 0.92);
-  --bg-glass-solid: rgba(226, 228, 236, 0.97);
-  --surface: rgba(30, 32, 48, 0.04);
-  --surface-hover: rgba(30, 32, 48, 0.065);
-  --border: rgba(30, 32, 48, 0.09);
-  --border-accent: rgba(74, 99, 224, 0.28);
-  --text: #2b2c3a;
-  --text2: #5e5f72;
-  --text3: #8d8ea0;
-  --accent: #4a63e0;
-  --accent-soft: rgba(74, 99, 224, 0.10);
-  --accent-glow: rgba(74, 99, 224, 0.16);
-  --up: #d13a4b;
-  --down: #1a9c6b;
-  --neutral: #6b6b80;
-  --shadow-2: 0 8px 24px rgba(20, 22, 35, 0.07);
-  --shadow-accent: 0 8px 22px rgba(74, 99, 224, 0.12);
-  --ticker-inner: rgba(219, 222, 231, 0.95);
-  --glare: rgba(30, 32, 48, 0.045);
-}
-
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -186,50 +142,6 @@ body::before {
   gap: 6px;
 }
 
-/* Source Switch */
-.source-switch {
-  display: flex;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-sm);
-  padding: 2px;
-  gap: 1px;
-}
-
-.source-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 8px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text3);
-  font-family: var(--ui);
-  font-size: 9px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
-  white-space: nowrap;
-}
-
-.source-btn:hover {
-  background: var(--surface-hover);
-  color: var(--text2);
-}
-
-.source-btn.active {
-  background: var(--accent);
-  color: #fff;
-}
-
-.source-icon { display: none; }
-
-.source-label {
-  letter-spacing: 0.02em;
-  font-weight: 700;
-}
-
 /* Estado de actualización */
 .update-dot {
   width: 5px;
@@ -302,162 +214,13 @@ body::before {
 ═══════════════════════════════════════════════ */
 .rates-section {
   padding: 14px 14px 8px;
-  min-height: 80px;
+  min-height: 300px; /* reserva el alto: sin esto el popup se abre diminuto y salta al cargar las tarjetas */
+  max-height: 450px; /* Chrome topa el popup a 600px: cabecera + esto + ticker + pie ≈ 570; las tarjetas se desplazan dentro */
+  scrollbar-gutter: stable;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
-.rates-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 22px;
-  color: var(--text3);
-  font-size: 11px;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.rates-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.rates-grid.cols-2 { grid-template-columns: 1fr 1fr; }
-
-/* Rate Cards — hairline + lift, sin glow excesivo */
-.rate-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 11px 12px 10px;
-  position: relative;
-  overflow: hidden;
-  cursor: default;
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
-}
-
-.rate-card:hover {
-  border-color: var(--border-accent);
-  background: var(--surface-hover);
-  transform: translateY(-1px);
-}
-
-/* Glare — barrido de luz diagonal al pasar el cursor */
-.rate-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -60px;
-  width: 46px;
-  transform: skewX(-20deg);
-  background: linear-gradient(90deg, transparent, var(--glare), transparent);
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0;
-}
-
-.rate-card:hover::before {
-  opacity: 1;
-  animation: glare-sweep 1.9s ease-in-out infinite;
-}
-
-@keyframes glare-sweep {
-  0% { left: -60px; }
-  46% { left: 112%; }
-  100% { left: 112%; }
-}
-
-/* Indicador de tendencia — línea fina, sin halo */
-.rate-card::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 2px;
-  border-radius: 2px;
-}
-
-.rate-card.up::after { background: var(--up); }
-.rate-card.down::after { background: var(--down); }
-.rate-card.neutral::after { background: var(--text3); opacity: 0.4; }
-.rate-card.new::after { background: var(--accent); }
-
-.rate-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-  padding-left: 6px;
-}
-
-.rate-cur {
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text2);
-  letter-spacing: 0.08em;
-}
-
-.rate-flag { font-size: 13px; line-height: 1; opacity: 0.9; }
-
-.rate-val {
-  font-family: var(--mono);
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  padding-left: 6px;
-}
-
-.rate-card.up .rate-val { color: var(--up); }
-.rate-card.down .rate-val { color: var(--down); }
-.rate-card.neutral .rate-val { color: var(--text); }
-.rate-card.new .rate-val { color: var(--accent); }
-
-.rate-bot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 6px;
-  padding-top: 6px;
-  padding-left: 6px;
-  border-top: 1px solid var(--border);
-}
-
-.rate-name {
-  font-size: 10px;
-  color: var(--text3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 60%;
-}
-
-.rate-diff {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.rate-card.up .rate-diff { color: var(--up); }
-.rate-card.down .rate-diff { color: var(--down); }
-.rate-card.neutral .rate-diff { color: var(--text3); }
 
 /* ═══════════════════════════════════════════════
    TICKER SECTION

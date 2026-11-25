@@ -1,0 +1,183 @@
+/* ═══════════════════════════════════════════════
+   TASALO — Paletas de color (las mismas de Android: ui/theme/Palettes.kt + Theme.kt)
+   Se eligen con <html data-paleta="id" data-mode="dark|light"> (lo pone theme-boot.js / palettes.js).
+   Cada bloque define los 13 tokens de Android (bg, surface, card, card-high, accent, brand, on-accent,
+   text, text2, outline, ok, bad, soft). El primer bloque deriva de ahí los nombres que ya usan
+   newtab.css, popup.css y options.css, así ninguna hoja necesita saber qué paleta hay activa.
+   Requiere color-mix() (Chrome 111+, Firefox 113+).
+═══════════════════════════════════════════════ */
+
+:root[data-paleta] {
+  --bg: var(--p-bg);
+  --card: var(--p-card);
+  --card-high: var(--p-card-high);
+  --text: var(--p-text);
+  --text2: var(--p-text2);
+  --text3: var(--p-outline);
+  --accent: var(--p-accent);
+  --on-accent: var(--p-on-accent);
+  --accent-soft: color-mix(in srgb, var(--p-brand) var(--p-soft), transparent);
+  --accent-glow: color-mix(in srgb, var(--p-accent) 28%, transparent);
+  --border: color-mix(in srgb, var(--p-text) 10%, transparent);
+  --border-accent: color-mix(in srgb, var(--p-accent) 35%, transparent);
+  --up: var(--p-bad);
+  --dn: var(--p-ok);
+  --down: var(--p-ok);
+  --neutral: var(--p-text2);
+  --bg2: color-mix(in srgb, var(--p-surface) 92%, transparent);
+  --bg3: color-mix(in srgb, var(--p-text) 5%, transparent);
+  --bg4: color-mix(in srgb, var(--p-text) 8%, transparent);
+  --surface: var(--bg3);
+  --surface-hover: var(--bg4);
+  --bg-glass: color-mix(in srgb, var(--p-surface) 90%, transparent);
+  --bg-glass-solid: color-mix(in srgb, var(--p-bg) 97%, transparent);
+  --glass-bg: color-mix(in srgb, var(--p-surface) 72%, transparent);
+  --glass-border: color-mix(in srgb, var(--p-text) 9%, transparent);
+  --ticker-inner: color-mix(in srgb, var(--p-card) 88%, transparent);
+  --glare: color-mix(in srgb, var(--p-text) 16%, transparent);
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.30);
+  --glass-shadow-hover: 0 14px 36px rgba(0, 0, 0, 0.36);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-accent: 0 8px 22px color-mix(in srgb, var(--p-accent) 18%, transparent);
+  color-scheme: dark;
+}
+
+:root[data-paleta][data-mode="light"] {
+  --border: color-mix(in srgb, var(--p-text) 12%, transparent);
+  --border-accent: color-mix(in srgb, var(--p-accent) 30%, transparent);
+  --bg3: color-mix(in srgb, var(--p-text) 4%, transparent);
+  --bg4: color-mix(in srgb, var(--p-text) 7%, transparent);
+  --glare: color-mix(in srgb, var(--p-text) 5%, transparent);
+  --glass-shadow: 0 10px 30px rgba(20, 22, 35, 0.07);
+  --glass-shadow-hover: 0 14px 36px rgba(20, 22, 35, 0.10);
+  --shadow-1: 0 1px 2px rgba(20, 22, 35, 0.05);
+  --shadow-2: 0 8px 24px rgba(20, 22, 35, 0.07);
+  color-scheme: light;
+}
+
+/* ── Clásica (Theme.kt): verde azulado sobre azul pizarra ── */
+:root[data-paleta="clasica"][data-mode="dark"] {
+  --p-bg: #0E1621; --p-surface: #121C28; --p-card: #16212F; --p-card-high: #1C2937;
+  --p-accent: #3DD6C0; --p-brand: #3DD6C0; --p-on-accent: #06201C;
+  --p-text: #E8EEF5; --p-text2: #9FB0C3; --p-outline: #5F7389;
+  --p-ok: #34D399; --p-bad: #F2555F; --p-soft: 14%;
+}
+:root[data-paleta="clasica"][data-mode="light"] {
+  --p-bg: #E6EEF1; --p-surface: #DDE7EB; --p-card: #EEF4F6; --p-card-high: #F4F8FA;
+  --p-accent: #09665B; --p-brand: #09665B; --p-on-accent: #FFFFFF;
+  --p-text: #1B2A33; --p-text2: #4F6470; --p-outline: #6E818C;
+  --p-ok: #13724F; --p-bad: #BC2C3C; --p-soft: 10%;
+}
+
+/* ── Soft Glass ── */
+:root[data-paleta="soft"][data-mode="dark"] {
+  --p-bg: #14130F; --p-surface: #1A1814; --p-card: #211F1A; --p-card-high: #2A2721;
+  --p-accent: #F0C94A; --p-brand: #F0C94A; --p-on-accent: #1F1A06;
+  --p-text: #F1EEE4; --p-text2: #B1AB9C; --p-outline: #7A7566;
+  --p-ok: #34D399; --p-bad: #F2555F; --p-soft: 14%;
+}
+:root[data-paleta="soft"][data-mode="light"] {
+  --p-bg: #EDEBE6; --p-surface: #F3F1EC; --p-card: #FBF9F4; --p-card-high: #FFFEFB;
+  --p-accent: #6B5000; --p-brand: #F2C94C; --p-on-accent: #1F1D18;
+  --p-text: #1F1D18; --p-text2: #5E5A50; --p-outline: #857F70;
+  --p-ok: #13724F; --p-bad: #B52A39; --p-soft: 22%;
+}
+
+/* ── Óceano ── */
+:root[data-paleta="oceano"][data-mode="dark"] {
+  --p-bg: #06141B; --p-surface: #0B1A23; --p-card: #11212D; --p-card-high: #253745;
+  --p-accent: #CCD0CF; --p-brand: #CCD0CF; --p-on-accent: #06141B;
+  --p-text: #CCD0CF; --p-text2: #9BA8AB; --p-outline: #6B7F8E;
+  --p-ok: #34D399; --p-bad: #F2555F; --p-soft: 12%;
+}
+:root[data-paleta="oceano"][data-mode="light"] {
+  --p-bg: #D9DDDC; --p-surface: #CFD4D3; --p-card: #E7EAE9; --p-card-high: #F1F3F2;
+  --p-accent: #253745; --p-brand: #253745; --p-on-accent: #FFFFFF;
+  --p-text: #06141B; --p-text2: #34454F; --p-outline: #4A5C6A;
+  --p-ok: #0C5F40; --p-bad: #A82434; --p-soft: 10%;
+}
+
+/* ── Amber Walnut Morning ── */
+:root[data-paleta="amber"][data-mode="dark"] {
+  --p-bg: #272220; --p-surface: #2E2825; --p-card: #362F2B; --p-card-high: #433B35;
+  --p-accent: #CE9C7D; --p-brand: #CE9C7D; --p-on-accent: #1E1510;
+  --p-text: #EBEFEE; --p-text2: #CCB499; --p-outline: #867668;
+  --p-ok: #34D399; --p-bad: #F46B74; --p-soft: 14%;
+}
+:root[data-paleta="amber"][data-mode="light"] {
+  --p-bg: #EBEFEE; --p-surface: #E0E4E2; --p-card: #F4F6F5; --p-card-high: #FBFCFB;
+  --p-accent: #945535; --p-brand: #BB6C43; --p-on-accent: #1A110C;
+  --p-text: #4A413C; --p-text2: #6A5C52; --p-outline: #8D8883;
+  --p-ok: #13724F; --p-bad: #B52A39; --p-soft: 10%;
+}
+
+/* ── Calcite ── */
+:root[data-paleta="calcite"][data-mode="dark"] {
+  --p-bg: #202326; --p-surface: #272B2F; --p-card: #2F3438; --p-card-high: #3C4044;
+  --p-accent: #FD8C5A; --p-brand: #FD8C5A; --p-on-accent: #1E1008;
+  --p-text: #DDDCDB; --p-text2: #EDBF9B; --p-outline: #917966;
+  --p-ok: #34D399; --p-bad: #F4727A; --p-soft: 14%;
+}
+:root[data-paleta="calcite"][data-mode="light"] {
+  --p-bg: #DDDCDB; --p-surface: #D2D1CF; --p-card: #E9E8E7; --p-card-high: #F4F3F2;
+  --p-accent: #8E4524; --p-brand: #FD7B41; --p-on-accent: #1E1008;
+  --p-text: #3C4044; --p-text2: #555A5F; --p-outline: #7B7C7F;
+  --p-ok: #116747; --p-bad: #AA2736; --p-soft: 12%;
+}
+
+/* ── Sapphire Ash Morning ── */
+:root[data-paleta="sapphire"][data-mode="dark"] {
+  --p-bg: #0F1C23; --p-surface: #14252E; --p-card: #1A2F3A; --p-card-high: #223B48;
+  --p-accent: #E5AEA9; --p-brand: #E5AEA9; --p-on-accent: #1A0F0E;
+  --p-text: #F5F5F5; --p-text2: #A6A9D0; --p-outline: #6F768C;
+  --p-ok: #34D399; --p-bad: #F3636C; --p-soft: 14%;
+}
+:root[data-paleta="sapphire"][data-mode="light"] {
+  --p-bg: #EEF0F0; --p-surface: #E3E6E6; --p-card: #F7F8F8; --p-card-high: #FFFFFF;
+  --p-accent: #35627A; --p-brand: #35627A; --p-on-accent: #FFFFFF;
+  --p-text: #17303C; --p-text2: #475A63; --p-outline: #808B8F;
+  --p-ok: #13724F; --p-bad: #B52A39; --p-soft: 12%;
+}
+
+/* ── Opaline ── */
+:root[data-paleta="opaline"][data-mode="dark"] {
+  --p-bg: #141416; --p-surface: #1B1B1E; --p-card: #232326; --p-card-high: #2D2D31;
+  --p-accent: #FF634A; --p-brand: #FF634A; --p-on-accent: #1E0A06;
+  --p-text: #F4F4F6; --p-text2: #B9B9BE; --p-outline: #6F6F72;
+  --p-ok: #34D399; --p-bad: #F2555F; --p-soft: 14%;
+}
+:root[data-paleta="opaline"][data-mode="light"] {
+  --p-bg: #ECECEE; --p-surface: #E2E2E4; --p-card: #F4F4F6; --p-card-high: #FFFFFF;
+  --p-accent: #AB4232; --p-brand: #FF634A; --p-on-accent: #1E0A06;
+  --p-text: #1F2023; --p-text2: #54555A; --p-outline: #87888C;
+  --p-ok: #13724F; --p-bad: #B52A39; --p-soft: 10%;
+}
+
+/* ── Lemon Granite Morning ── */
+:root[data-paleta="lemon"][data-mode="dark"] {
+  --p-bg: #10202A; --p-surface: #162A36; --p-card: #1D3340; --p-card-high: #2C4C5C;
+  --p-accent: #F3E308; --p-brand: #F3E308; --p-on-accent: #121E26;
+  --p-text: #EEF1F2; --p-text2: #B8BFC1; --p-outline: #707B81;
+  --p-ok: #34D399; --p-bad: #F46B74; --p-soft: 14%;
+}
+:root[data-paleta="lemon"][data-mode="light"] {
+  --p-bg: #E8ECED; --p-surface: #DCE1E3; --p-card: #F1F4F5; --p-card-high: #FAFBFB;
+  --p-accent: #2C4C5C; --p-brand: #F3E308; --p-on-accent: #1B2F3A;
+  --p-text: #1B2F3A; --p-text2: #40596A; --p-outline: #7B8891;
+  --p-ok: #13714E; --p-bad: #B52A39; --p-soft: 12%;
+}
+
+/* ── Arctic Reflection ── */
+:root[data-paleta="arctic"][data-mode="dark"] {
+  --p-bg: #111D26; --p-surface: #172732; --p-card: #1D3140; --p-card-high: #243C4C;
+  --p-accent: #7FA8C2; --p-brand: #7FA8C2; --p-on-accent: #0B1820;
+  --p-text: #F4FCFB; --p-text2: #ACBCBF; --p-outline: #6C7A7F;
+  --p-ok: #34D399; --p-bad: #F46972; --p-soft: 14%;
+}
+:root[data-paleta="arctic"][data-mode="light"] {
+  --p-bg: #E6EFEF; --p-surface: #DAE5E6; --p-card: #F4FCFB; --p-card-high: #FFFFFF;
+  --p-accent: #3F6985; --p-brand: #5289AD; --p-on-accent: #0E1B24;
+  --p-text: #243C4C; --p-text2: #466070; --p-outline: #7C8B93;
+  --p-ok: #13724F; --p-bad: #B52A39; --p-soft: 10%;
+}

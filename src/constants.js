@@ -77,6 +77,7 @@ export const DEFAULT_SETTINGS = {
   colorDown:          '#4ade80',
   colorNeutral:       'auto',
   colorBg:            'auto',
+  palette:            'clasica',        // id de palettes.js (las mismas que Android)
   opacity:            1.0,
   selectedCurrencies: [],
   currencyOrder:      [...PREFERRED_ORDER],

@@ -4,10 +4,12 @@
 // ═══════════════════════════════════════════════
 
 import { DEFAULT_SETTINGS, CURRENCY_META, PREFERRED_ORDER, DEFAULT_TICKER_CURRENCIES, TICKER_CURRENCY_META, flagImgHtml, attachFlagFallbacks, browser } from './constants.js';
+import { applyAppearance, createPaletteList, normalizePalette } from './palettes.js';
 
 let settings = {};
 let availableCurrencies = [];
 let availableTickerCurrencies = [];
+let paletteUi = null;
 
 // ═══════════════════════════════════════════════
 //  Init
@@ -19,24 +21,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCurrenciesList();
   renderTickerCurrenciesList();
   updateRangeValues();
-  applyTheme(settings.colorBg || 'auto');
   setAboutVersion();
 });
 
-// ═══════════════════════════════════════════════════
-//  Theme (B2 fix: la página de Options ahora sí aplica su propio tema)
-// ═══════════════════════════════════════════════════
-function applyTheme(theme) {
-  const root = document.documentElement;
-  if (theme === 'light') {
-    root.classList.add('light');
-  } else if (theme === 'dark') {
-    root.classList.remove('light');
-  } else {
-    // auto: sigue la preferencia del sistema
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    root.classList.toggle('light', !prefersDark);
-  }
+// Paleta y modo se aplican y se guardan al instante (como en Android); el resto de ajustes, con «Guardar cambios».
+async function saveAppearance(patch) {
+  Object.assign(settings, patch);
+  applyAppearance({ palette: settings.palette, theme: settings.colorBg });
+  if (paletteUi) paletteUi.select(normalizePalette(settings.palette));
+  const { settings: stored } = await browser.storage.local.get('settings');
+  await browser.storage.local.set({ settings: { ...DEFAULT_SETTINGS, ...stored, ...patch } });
 }
 
 function setAboutVersion() {
@@ -68,6 +62,8 @@ function loadFormValues() {
   document.querySelectorAll('#themeGroup .seg-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.val === theme);
   });
+  applyAppearance({ palette: settings.palette, theme: settings.colorBg });
+  if (paletteUi) paletteUi.select(normalizePalette(settings.palette));
 
   // Fuente de datos preferida
   const source = settings.sourcePreference || 'eltoque';
@@ -125,9 +121,13 @@ function setupFormListeners() {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#themeGroup .seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      applyTheme(btn.dataset.val); // preview en vivo (fix B2)
+      saveAppearance({ colorBg: btn.dataset.val });
     });
   });
+
+  // Paletas (selector con muestras, igual que Ajustes de Android)
+  paletteUi = createPaletteList(normalizePalette(settings.palette), (id) => saveAppearance({ palette: id }));
+  document.getElementById('paletteList').replaceChildren(paletteUi.el);
 
   // Fuente de datos preferida
   document.querySelectorAll('#sourceGroup .seg-btn').forEach(btn => {
